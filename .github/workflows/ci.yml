@@ -42,6 +42,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: $RUST_VERSION
+        default: true
 
     - name: Run tests
       run: cargo test --verbose
