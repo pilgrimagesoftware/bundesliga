@@ -36,7 +36,7 @@ jobs:
     - name: Setup Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: $RUST_VERSION
+        toolchain: ${{ env.RUST_VERSION }}
         default: true
 
     - name: Build
