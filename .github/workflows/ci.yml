@@ -20,6 +20,9 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
+    - run: |
+            echo "RUST_VERSION=$(cat .rust-version)" >> $GITHUB_ENV
+
     - name: Setup Node
       uses: actions/setup-node@v6.3.0
       with:
@@ -37,6 +40,8 @@ jobs:
 
     - name: Setup Rust toolchain
       uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: $RUST_VERSION
 
     - name: Run tests
       run: cargo test --verbose
