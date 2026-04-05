@@ -7,7 +7,7 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
-  workflow_dispatch: 
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -25,10 +25,18 @@ jobs:
       with:
         node-version-file: .node-version
 
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+
     - name: Build
       run: |
             pnpm install
             cargo tauri build --verbose
-      
+
+    - name: Setup Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+
     - name: Run tests
       run: cargo test --verbose
