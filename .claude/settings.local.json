@@ -5,7 +5,12 @@
       "Bash(openspec new:*)",
       "Bash(openspec status:*)",
       "Bash(openspec instructions:*)",
-      "Bash(openspec list:*)"
+      "Bash(openspec list:*)",
+      "Bash(cargo doc:*)",
+      "Read(//Users/paulyhedral/.cargo/registry/src/**)",
+      "Read(//Users/paulyhedral/.cargo/registry/**)",
+      "Bash(cargo check:*)",
+      "Bash(pnpm check:*)"
     ]
   }
 }

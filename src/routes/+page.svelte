@@ -1,134 +1,151 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
-  import { writable, derived, get } from "svelte/store";
+  import type { AppViewState } from "../types/AppViewState";
   import type { League } from "../types/League";
-  import type { TableTeam } from "../types/TableTeam";
+  import Header from "../lib/components/Header.svelte";
+  import Sidebar from "../lib/components/Sidebar.svelte";
+  import MatchDetailView from "../lib/views/MatchDetailView.svelte";
+  import MatchesView from "../lib/views/MatchesView.svelte";
+  import TableView from "../lib/views/TableView.svelte";
+  import TeamDetailView from "../lib/views/TeamDetailView.svelte";
+  import TeamsView from "../lib/views/TeamsView.svelte";
+  import { getLeague, getSeason, setLeague, setSeason } from "../lib/stores/context.svelte";
+  import { getView, navigate } from "../lib/stores/view.svelte";
 
-  // Stores for leagues, seasons, and results
-  const leagues = writable<League[]>([]);
-  const selectedLeague = writable<number | null>(null);
-  const seasons = writable<number[]>([]);
-  const selectedSeason = writable<number | null>(null);
-  const results = writable<TableTeam[]>([]);
+  let leagues = $state<League[]>([]);
+  let seasons = $state<number[]>([]);
 
-  // Fetch leagues from Rust backend
-  async function fetchLeagues() {
-    const data: League[] = await invoke("get_leagues");
-    leagues.set(data);
-    if (data.length > 0) selectedLeague.set(0);
-  }
+  // Cooldown state for Header
+  let isOnCooldown = $state(false);
+  let nextRefreshAt = $state<number | null>(null);
+  let lastUpdatedLabel = $state("");
+  let cooldownTimer: ReturnType<typeof setInterval> | null = null;
 
-  // Fetch seasons when a league is selected
-  async function fetchSeasons(league: League) {
-    const data: number[] = await invoke("get_seasons", { league: league.shortcut });
-    seasons.set(data);
-    if (data.length > 0) selectedSeason.set(data[0]);
-  }
+  // View component refs for manual refresh
+  let tableViewRef: { refresh: () => void } | null = $state(null);
+  let matchesViewRef: { refresh: () => void } | null = $state(null);
 
-  // Fetch results when league and season are selected
-  async function fetchResults(league: League, season: number) {
-    const data: TableTeam[] = await invoke("get_results", { league: league.shortcut, season });
-    results.set(data);
-  }
-
-  // Auto-fetch results every 30 seconds
-  let interval: number; // TODO: NodeJS.Timeout;
-  function startAutoUpdate() {
-    if (interval) clearInterval(interval);
-    interval = setInterval(async () => {
-      const league = get(leagues)[$selectedLeague];
-      const season = get(selectedSeason);
-      if (league && season) await fetchResults(league, season);
-    }, 30000);
-  }
-
-  // Watch for changes and fetch data
-  derived(selectedLeague, ($selectedLeague) => {
-    if ($selectedLeague) fetchSeasons(get(leagues)[$selectedLeague]);
-  });
-
-  derived([selectedLeague, selectedSeason], ([$selectedLeague, $selectedSeason]) => {
-    if ($selectedLeague && $selectedSeason) {
-      fetchResults(get(leagues)[$selectedLeague], $selectedSeason);
-      startAutoUpdate();
+  function handleCooldownChange(cached: boolean, nra: number | null) {
+    isOnCooldown = cached && nra != null;
+    nextRefreshAt = nra;
+    if (cooldownTimer) clearInterval(cooldownTimer);
+    if (isOnCooldown && nextRefreshAt) {
+      cooldownTimer = setInterval(() => {
+        if (!nextRefreshAt) return;
+        const remaining = Math.max(0, nextRefreshAt - Date.now());
+        if (remaining === 0) {
+          isOnCooldown = false;
+          lastUpdatedLabel = "";
+          if (cooldownTimer) clearInterval(cooldownTimer);
+        } else {
+          const secs = Math.ceil(remaining / 1000);
+          lastUpdatedLabel = `Next refresh in ${secs}s`;
+        }
+      }, 1000);
+    } else {
+      lastUpdatedLabel = "";
     }
-  });
+  }
 
-  onMount(fetchLeagues);
+  let isLive = $state(false);
+
+  function handleRefresh() {
+    const v = getView();
+    if (v.screen === "table") tableViewRef?.refresh();
+    else if (v.screen === "matches") matchesViewRef?.refresh();
+  }
+
+  async function startup() {
+    try {
+      leagues = await invoke<League[]>("get_leagues");
+      if (leagues.length > 0) setLeague(leagues[0]);
+    } catch (_) {}
+
+    try {
+      seasons = await invoke<number[]>("get_seasons");
+      if (seasons.length > 0) setSeason(seasons[0]);
+    } catch (_) {}
+
+    try {
+      const saved: AppViewState | null = await invoke("get_last_viewed");
+      if (saved) {
+        const TWO_DAYS = 2 * 24 * 3600;
+        const now = Math.floor(Date.now() / 1000);
+        const elapsed = now - saved.last_opened;
+
+        if (elapsed < TWO_DAYS) {
+          const savedLeague = leagues.find((l) => l.shortcut === saved.league);
+          if (savedLeague) setLeague(savedLeague);
+          if (seasons.includes(saved.season)) setSeason(saved.season);
+
+          if (saved.view === "table") {
+            navigate({ screen: "table" });
+          } else if (saved.view === "matches" && saved.matchday != null) {
+            navigate({ screen: "matches", matchday: saved.matchday });
+          } else if (saved.view === "teams") {
+            navigate({ screen: "teams" });
+          } else if (saved.view === "team_detail" && saved.selected_team_id != null) {
+            navigate({ screen: "team_detail", teamId: saved.selected_team_id });
+          } else {
+            navigate({ screen: "table" });
+          }
+          return;
+        }
+      }
+    } catch (_) {}
+
+    // Default: navigate to current matchday
+    try {
+      const league = getLeague();
+      if (league) {
+        const cur = await invoke<{ order_id: number }>("get_current_matchday", {
+          league: league.shortcut,
+        });
+        navigate({ screen: "matches", matchday: cur.order_id });
+        return;
+      }
+    } catch (_) {}
+
+    navigate({ screen: "table" });
+  }
+
+  startup();
+
+  const view = $derived(getView());
 </script>
 
-<main class="p-4">
-  <h1 class="text-2xl font-bold">Soccer League Results</h1>
+<div class="flex h-screen w-screen overflow-hidden bg-[var(--color-surface)] text-[var(--color-text)]">
+  <Sidebar />
 
-  <!-- League Selector -->
-  <label for="league" class="block mt-4">League:</label>
-  <select id="league" bind:value={$selectedLeague} class="border p-2 rounded">
-    {#each $leagues as league}
-      <option value={league.shortcut}>{league.name}</option>
-    {/each}
-  </select>
+  <div class="flex flex-col flex-1 min-w-0">
+    <Header
+      {leagues}
+      {seasons}
+      {isLive}
+      {isOnCooldown}
+      {lastUpdatedLabel}
+      onRefresh={handleRefresh}
+    />
 
-  <!-- Season Selector -->
-    <label for="season" class="block mt-4">Season:</label>
-    <select id="season" bind:value={$selectedSeason} class="border p-2 rounded">
-      {#if $selectedLeague}
-      {#each $seasons as season}
-        <option value={season}>{season}</option>
-      {/each}
+    <main class="flex flex-1 overflow-hidden">
+      {#if view.screen === "table"}
+        <TableView
+          bind:this={tableViewRef}
+          onCooldownChange={handleCooldownChange}
+        />
+      {:else if view.screen === "matches"}
+        <MatchesView
+          bind:this={matchesViewRef}
+          matchday={view.matchday}
+          onCooldownChange={handleCooldownChange}
+        />
+      {:else if view.screen === "match_detail"}
+        <MatchDetailView matchId={view.matchId} fromMatchday={view.fromMatchday} />
+      {:else if view.screen === "teams"}
+        <TeamsView />
+      {:else if view.screen === "team_detail"}
+        <TeamDetailView teamId={view.teamId} />
       {/if}
-    </select>
-
-  <!-- Results Table -->
-    <h2 class="mt-6 text-xl font-semibold">Table</h2>
-    <table class="w-full mt-2 border">
-      <thead>
-        <tr class="bg-gray-200">
-          <th class="p-2">Position</th>
-          <th class="p-2">Logo</th>
-          <th class="p-2">Name</th>
-          <th class="p-2">Points</th>
-          <th class="p-2">Goal Difference</th>
-          <th class="p-2">Wins</th>
-          <th class="p-2">Losses</th>
-          <th class="p-2">Draws</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#if $selectedLeague && $selectedSeason}
-        {#each $results as result, index}
-          <tr class="border-b">
-            <td class="p-2">{index + 1}</td>
-            <td class="p-2"><img src="{result.teamIconUrl}" alt="{result.teamName} Icon" /></td>
-            <td class="p-2">{result.teamName}</td>
-            <td class="p-2">{result.points}</td>
-            <td class="p-2">{result.goalDifference}</td>
-            <td class="p-2">{result.wins}</td>
-            <td class="p-2">{result.losses}</td>
-            <td class="p-2">{result.draws}</td>
-          </tr>
-        {/each}
-        {/if}
-      </tbody>
-    </table>
-</main>
-
-<style>
-  select {
-    display: block;
-    width: 100%;
-    padding: 8px;
-    margin-top: 4px;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
-  }
-  th {
-    background-color: #f4f4f4;
-  }
-</style>
+    </main>
+  </div>
+</div>

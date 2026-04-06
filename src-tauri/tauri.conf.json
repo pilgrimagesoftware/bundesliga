@@ -12,9 +12,12 @@
   "app": {
     "windows": [
       {
-        "title":"Football Scores",
-        "width": 800,
-        "height": 600
+        "title": "Football Scores",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 960,
+        "minHeight": 640,
+        "resizable": true
       }
     ],
     "security": {
