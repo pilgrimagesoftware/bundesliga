@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: TheSportsDB team lookup with name matching
-The system SHALL fetch team detail from TheSportsDB when team detail is first requested. The lookup SHALL first attempt an exact name search; if no match is found or the top result's name similarity score is below 0.85 (Jaro-Winkler), the system SHALL return a cache-miss result and the team detail view SHALL render without squad/staff data.
+When team detail is requested, the system SHALL attempt to enrich the baseline OpenLigaDB response with TheSportsDB data. The lookup SHALL first attempt an exact name search; if no match is found or the top result's name similarity score is below 0.85 (Jaro-Winkler), the system SHALL return a cache-miss result and the team detail view SHALL render without squad/staff data.
 
 #### Scenario: Exact name match succeeds
 - **WHEN** TheSportsDB search returns a team with name similarity ≥ 0.85

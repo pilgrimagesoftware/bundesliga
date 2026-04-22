@@ -13,7 +13,7 @@ The app currently has a broken, unstyled proof-of-concept: the table never loads
 - Add Matches view: matchday list with prev/next navigation, match cards with scores
 - Add Match Detail view: goal timeline with scorer, minute, penalty/OG flags
 - Add Teams view: team grid with click-through to team detail
-- Add Team Detail view: table position, season stats, squad by position, staff/coaches, recent matches
+- Add Team Detail view: baseline table position, season stats, and recent matches from OpenLigaDB, with squad/staff enrichment when TheSportsDB data is available
 - Integrate TheSportsDB free API for squad and staff data (team detail only)
 - Add local JSON cache in Tauri app data dir for team data (30-day TTL) and app state
 - Add rate limiting in Rust with per-category cooldowns; disable refresh button during cooldown

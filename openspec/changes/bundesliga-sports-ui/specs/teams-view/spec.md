@@ -12,11 +12,15 @@ The teams view SHALL display all teams for the selected league and season as a g
 - **THEN** the view state transitions to `{ screen: 'team_detail', teamId: <id> }`
 
 ### Requirement: Team detail — identity and season stats
-The team detail view SHALL display: team logo, full name, founded year, stadium name and capacity, and the team's current row from the league table (P, W, D, L, GF, GA, GD, Pts, position).
+The team detail view SHALL display the team's baseline identity and season context from OpenLigaDB: team logo, full name, and the team's current row from the league table (P, W, D, L, GF, GA, GD, Pts, position). When enrichment data is available, the view SHALL also display founded year, stadium name, and capacity.
 
 #### Scenario: Team detail shows table position and stats
 - **WHEN** team detail loads
 - **THEN** the team's current league position and season statistics are visible
+
+#### Scenario: Team detail renders with baseline data only
+- **WHEN** team detail loads and no TheSportsDB enrichment is available
+- **THEN** the team logo, full name, table position, season statistics, and recent matches still render normally using OpenLigaDB data
 
 #### Scenario: Missing TheSportsDB data shows graceful fallback
 - **WHEN** TheSportsDB data is unavailable or the name match confidence is below threshold
@@ -34,7 +38,7 @@ The team detail view SHALL display the team's squad grouped by position (Goalkee
 - **THEN** a "Squad data unavailable" placeholder is shown in the squad section
 
 ### Requirement: Team detail — staff and coaches
-The team detail view SHALL display coaching staff entries from TheSportsDB, showing name and role for each staff member.
+When available, the team detail view SHALL display coaching staff entries from TheSportsDB, showing name and role for each staff member.
 
 #### Scenario: Coaching staff shown when available
 - **WHEN** TheSportsDB returns staff data for the team

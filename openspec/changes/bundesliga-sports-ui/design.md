@@ -62,7 +62,15 @@ type AppView =
 
 **Rationale**: Tailwind v4 has zero config files; all theming is in CSS. The `@tailwindcss/vite` plugin handles the Vite integration. This removes the need for `tailwind.config.js` and keeps all styling concerns in one place.
 
-### 4. TheSportsDB as secondary data source with name-fuzzy matching
+### 4. Team detail renders from OpenLigaDB first, then enriches with TheSportsDB
+
+**Decision**: The team detail screen must be able to render meaningfully from OpenLigaDB data alone. TheSportsDB is an enrichment layer for founded year, stadium metadata, squad, and staff, not a prerequisite for the existence of the view.
+
+**Rationale**: This keeps the Teams vertical slice shippable even if third-party matching fails or TheSportsDB integration is deferred. It also separates a deterministic baseline experience (identity, table stats, recent matches) from the highest-risk part of the project (cross-provider name matching and external-cache behavior).
+
+**Alternative considered**: Make team detail entirely dependent on TheSportsDB-backed aggregation before the screen exists. Rejected — it couples the riskiest external integration to a core navigation path and delays a usable Teams flow.
+
+### 5. TheSportsDB as secondary data source with name-fuzzy matching
 
 **Decision**: When team detail is first requested, search TheSportsDB by team name (`/searchteams.php?t=`). Cache the `{openligadb_id → thesportsdb_id}` mapping alongside the team detail JSON. On subsequent requests, look up by cached ID directly.
 
@@ -72,7 +80,7 @@ type AppView =
 
 **Alternative considered**: Hardcoded name mapping table. Rejected — brittle, requires maintenance on team promotions/relegations.
 
-### 5. Local JSON cache in app data dir
+### 6. Local JSON cache in app data dir
 
 **Decision**: Two cache concerns:
 - `app_state.json` — last viewed state (view, league, season, matchday, team ID, timestamp)
@@ -84,7 +92,7 @@ Cache TTL: 30 days for team detail. On load, check `std::fs::metadata().modified
 
 **Alternative considered**: `tauri-plugin-store`. Rejected — adds a dependency for functionality that `serde_json` + `std::fs` handles cleanly.
 
-### 6. Rate limiting via per-category cooldowns in AppState
+### 7. Rate limiting via per-category cooldowns in AppState
 
 **Decision**: `AppState` holds a `HashMap<&'static str, Instant>` for last-fetched timestamps. Each command category has a minimum interval:
 
@@ -99,7 +107,7 @@ If a command is called within the cooldown window, return the cached/last value 
 
 **Rationale**: A simple HashMap<str, Instant> requires no external crate and is trivially correct. The cooldown is enforced on the backend so it cannot be bypassed by frontend bugs.
 
-### 7. Season list derived from current year
+### 8. Season list derived from current year
 
 **Decision**: `get_seasons` returns `[current_year, current_year-1, current_year-2, current_year-3]`. No API call. The backend uses `chrono::Local::now().year()`.
 
