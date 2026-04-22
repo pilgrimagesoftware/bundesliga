@@ -31,3 +31,8 @@ build/
 *.env
 .env.local
 Cargo.lock
+.svelte-kit/
+.vercel/
+.netlify/
+.cache/
+.turbo/
