@@ -1,7 +1,7 @@
 {
   "name": "bundesliga_app",
-  "version": "0.1.0",
-  "description": "",
+  "version": "0.0.1",
+  "description": "Displays Bundesliga matches, tables and news",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -28,6 +28,6 @@
     "svelte-check": "^4.0.0",
     "tailwindcss": "^4.2.2",
     "typescript": "~6.0.2",
-    "vite": "^6.4.1"
+    "vite": "^6.4.2"
   }
 }
