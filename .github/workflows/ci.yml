@@ -22,9 +22,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v6
+    - name: Checkout
+      uses: actions/checkout@v6
 
-    - run: |
+    - name: Set Rust version
+      run: |
             echo "RUST_VERSION=$(cat .rust-version)" >> $GITHUB_ENV
 
     - name: Setup Node
@@ -44,7 +46,8 @@ jobs:
         default: true
 
     - name: Install Tauri CLI
-      run: cargo install tauri-cli
+      run: |
+            cargo install tauri-cli
 
     - name: Build
       run: |
@@ -52,4 +55,5 @@ jobs:
             cargo tauri build --verbose
 
     - name: Run tests
-      run: cargo test --verbose
+      run: |
+            cargo test --verbose
