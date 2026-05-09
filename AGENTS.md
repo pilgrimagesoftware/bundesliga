@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code), Codex (openai.com/codex/), GitHub Copilot (copilot.github.com) when working with code in this repository.
 
 ## Project Overview
 
@@ -10,13 +10,13 @@ A Tauri v2 desktop app for displaying Bundesliga football league tables and scor
 
 ```bash
 # Full dev mode (starts Vite + Tauri together)
-pnpm tauri dev
+cargo tauri dev
 
 # Frontend only
 pnpm dev
 
 # Production build (Tauri binary)
-pnpm tauri build
+cargo tauri build
 
 # TypeScript + Svelte type checking
 pnpm check
