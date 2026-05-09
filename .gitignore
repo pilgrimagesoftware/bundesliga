@@ -31,7 +31,7 @@ build/
 *.env
 .env.local
 Cargo.lock
-# .svelte-kit/
+.svelte-kit/generated/
 .vercel/
 .netlify/
 .cache/
