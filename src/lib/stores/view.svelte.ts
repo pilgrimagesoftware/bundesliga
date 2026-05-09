@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { AppViewState } from "../../types/AppViewState";
+import { getLeague, getSeason } from "./context.svelte";
 
 export type AppView =
   | { screen: "table" }
@@ -16,21 +17,21 @@ export function getView() {
 
 export function navigate(next: AppView) {
   view = next;
+  saveCurrentView();
 }
 
-export async function navigateAndSave(
-  next: AppView,
-  league: string,
-  season: number
-) {
-  view = next;
+export function saveCurrentView() {
+  const league = getLeague();
+  const season = getSeason();
+  if (!league || !season) return;
+
   const state: AppViewState = {
     last_opened: Math.floor(Date.now() / 1000),
-    league,
+    league: league.shortcut,
     season,
-    view: next.screen,
-    matchday: "matchday" in next ? next.matchday : null,
-    selected_team_id: "teamId" in next ? next.teamId : null,
+    view: view.screen,
+    matchday: "matchday" in view ? view.matchday : null,
+    selected_team_id: "teamId" in view ? view.teamId : null,
   };
-  await invoke("save_last_viewed", { viewState: state }).catch(() => {});
+  void invoke("save_last_viewed", { viewState: state }).catch(() => {});
 }

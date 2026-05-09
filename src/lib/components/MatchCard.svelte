@@ -12,10 +12,10 @@
 
   function score(m: Match): string {
     const final = m.results?.find((r) => r.result_type === 2);
-    if (final) return `${final.points_team1} – ${final.points_team2}`;
+    if (final) return `${final.points_team1} - ${final.points_team2}`;
     const current = m.results?.find((r) => r.result_type === 1);
-    if (current) return `${current.points_team1} – ${current.points_team2}`;
-    return "– : –";
+    if (current) return `${current.points_team1} - ${current.points_team2}`;
+    return "- : -";
   }
 
   function statusLabel(m: Match): string {

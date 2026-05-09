@@ -18,8 +18,8 @@ use tauri::{Manager, State};
 // ─── AppState ────────────────────────────────────────────────────────────────
 
 pub struct AppState {
-    cooldown_tracker: HashMap<&'static str, Instant>,
-    last_responses: HashMap<&'static str, serde_json::Value>,
+    cooldown_tracker: HashMap<String, Instant>,
+    last_responses: HashMap<String, serde_json::Value>,
     pub app_data_dir: PathBuf,
 }
 
@@ -34,8 +34,8 @@ impl AppState {
     }
 
     /// Returns (is_on_cooldown, next_refresh_at_epoch_ms)
-    fn check_cooldown(&self, category: &str, min_secs: u64) -> (bool, Option<u64>) {
-        if let Some(last) = self.cooldown_tracker.get(category) {
+    fn check_cooldown(&self, cache_key: &str, min_secs: u64) -> (bool, Option<u64>) {
+        if let Some(last) = self.cooldown_tracker.get(cache_key) {
             let elapsed = last.elapsed().as_secs();
             if elapsed < min_secs {
                 let remaining_ms = (min_secs - elapsed) * 1000;
@@ -46,16 +46,17 @@ impl AppState {
         (false, None)
     }
 
-    fn update_cooldown(&mut self, category: &'static str) {
-        self.cooldown_tracker.insert(category, Instant::now());
+    fn update_cooldown(&mut self, cache_key: impl Into<String>) {
+        self.cooldown_tracker
+            .insert(cache_key.into(), Instant::now());
     }
 
-    fn store_response(&mut self, category: &'static str, value: serde_json::Value) {
-        self.last_responses.insert(category, value);
+    fn store_response(&mut self, cache_key: impl Into<String>, value: serde_json::Value) {
+        self.last_responses.insert(cache_key.into(), value);
     }
 
-    fn get_cached_response(&self, category: &str) -> Option<&serde_json::Value> {
-        self.last_responses.get(category)
+    fn get_cached_response(&self, cache_key: &str) -> Option<&serde_json::Value> {
+        self.last_responses.get(cache_key)
     }
 }
 
@@ -251,14 +252,19 @@ async fn get_table(
 ) -> Result<CachedResponse<Vec<TableTeam>>, String> {
     const CAT: &str = "table";
     const COOLDOWN: u64 = 60;
+    let cache_key = format!("{CAT}:{league}:{season}");
 
     let (on_cooldown, next_refresh_at) = {
         let s = state.lock().unwrap();
-        s.check_cooldown(CAT, COOLDOWN)
+        s.check_cooldown(&cache_key, COOLDOWN)
     };
 
     if on_cooldown {
-        let cached = state.lock().unwrap().get_cached_response(CAT).cloned();
+        let cached = state
+            .lock()
+            .unwrap()
+            .get_cached_response(&cache_key)
+            .cloned();
         if let Some(val) = cached {
             let data: Vec<TableTeam> = serde_json::from_value(val).map_err(|e| e.to_string())?;
             return Ok(CachedResponse {
@@ -275,8 +281,8 @@ async fn get_table(
 
     {
         let mut s = state.lock().unwrap();
-        s.update_cooldown(CAT);
-        s.store_response(CAT, serde_json::to_value(&data).unwrap_or_default());
+        s.update_cooldown(&cache_key);
+        s.store_response(&cache_key, serde_json::to_value(&data).unwrap_or_default());
     }
 
     Ok(CachedResponse {
@@ -294,14 +300,19 @@ async fn get_matchdays(
 ) -> Result<CachedResponse<Vec<Group>>, String> {
     const CAT: &str = "matchdays";
     const COOLDOWN: u64 = 300;
+    let cache_key = format!("{CAT}:{league}:{season}");
 
     let (on_cooldown, next_refresh_at) = {
         let s = state.lock().unwrap();
-        s.check_cooldown(CAT, COOLDOWN)
+        s.check_cooldown(&cache_key, COOLDOWN)
     };
 
     if on_cooldown {
-        let cached = state.lock().unwrap().get_cached_response(CAT).cloned();
+        let cached = state
+            .lock()
+            .unwrap()
+            .get_cached_response(&cache_key)
+            .cloned();
         if let Some(val) = cached {
             let data: Vec<Group> = serde_json::from_value(val).map_err(|e| e.to_string())?;
             return Ok(CachedResponse {
@@ -318,8 +329,8 @@ async fn get_matchdays(
 
     {
         let mut s = state.lock().unwrap();
-        s.update_cooldown(CAT);
-        s.store_response(CAT, serde_json::to_value(&data).unwrap_or_default());
+        s.update_cooldown(&cache_key);
+        s.store_response(&cache_key, serde_json::to_value(&data).unwrap_or_default());
     }
 
     Ok(CachedResponse {
@@ -343,14 +354,19 @@ async fn get_matches_for_matchday(
 ) -> Result<CachedResponse<Vec<Match>>, String> {
     const CAT: &str = "match_data";
     const COOLDOWN: u64 = 30;
+    let cache_key = format!("{CAT}:{league}:{season}:{group_order_id}");
 
     let (on_cooldown, next_refresh_at) = {
         let s = state.lock().unwrap();
-        s.check_cooldown(CAT, COOLDOWN)
+        s.check_cooldown(&cache_key, COOLDOWN)
     };
 
     if on_cooldown {
-        let cached = state.lock().unwrap().get_cached_response(CAT).cloned();
+        let cached = state
+            .lock()
+            .unwrap()
+            .get_cached_response(&cache_key)
+            .cloned();
         if let Some(val) = cached {
             let data: Vec<Match> = serde_json::from_value(val).map_err(|e| e.to_string())?;
             return Ok(CachedResponse {
@@ -367,8 +383,8 @@ async fn get_matches_for_matchday(
 
     {
         let mut s = state.lock().unwrap();
-        s.update_cooldown(CAT);
-        s.store_response(CAT, serde_json::to_value(&data).unwrap_or_default());
+        s.update_cooldown(&cache_key);
+        s.store_response(&cache_key, serde_json::to_value(&data).unwrap_or_default());
     }
 
     Ok(CachedResponse {
@@ -391,6 +407,17 @@ async fn get_teams(league: String, season: i32) -> Result<Vec<Team>, String> {
 }
 
 #[tauri::command]
+async fn get_team_matches(
+    league: String,
+    season: i32,
+    team_name: String,
+) -> Result<Vec<Match>, String> {
+    Match::by_league_team(&league, season, &team_name)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn get_top_scorers(league: String, season: i32) -> Result<Vec<GoalGetter>, String> {
     GoalGetter::list(&league, season)
         .await
@@ -407,8 +434,7 @@ async fn get_last_viewed(
     };
     match std::fs::read_to_string(&path) {
         Ok(content) => {
-            let parsed: AppViewState =
-                serde_json::from_str(&content).map_err(|e| e.to_string())?;
+            let parsed: AppViewState = serde_json::from_str(&content).map_err(|e| e.to_string())?;
             Ok(Some(parsed))
         }
         Err(_) => Ok(None),
@@ -438,6 +464,7 @@ async fn get_team_detail(
 ) -> Result<CachedResponse<TeamDetail>, String> {
     const CAT: &str = "team_detail";
     const COOLDOWN: u64 = 300;
+    let cache_key = format!("{CAT}:{team_id}");
 
     let app_data_dir = {
         let s = state.lock().unwrap();
@@ -447,7 +474,7 @@ async fn get_team_detail(
     if let Some(cached_detail) = read_team_cache(team_id, &app_data_dir) {
         let (on_cooldown, next_refresh_at) = {
             let s = state.lock().unwrap();
-            s.check_cooldown(CAT, COOLDOWN)
+            s.check_cooldown(&cache_key, COOLDOWN)
         };
         return Ok(CachedResponse {
             data: cached_detail,
@@ -458,7 +485,7 @@ async fn get_team_detail(
 
     let (on_cooldown, next_refresh_at) = {
         let s = state.lock().unwrap();
-        s.check_cooldown(CAT, COOLDOWN)
+        s.check_cooldown(&cache_key, COOLDOWN)
     };
 
     if on_cooldown {
@@ -520,7 +547,7 @@ async fn get_team_detail(
 
     {
         let mut s = state.lock().unwrap();
-        s.update_cooldown(CAT);
+        s.update_cooldown(&cache_key);
     }
 
     Ok(CachedResponse {
@@ -554,6 +581,7 @@ pub fn run() {
             get_matches_for_matchday,
             get_match_detail,
             get_teams,
+            get_team_matches,
             get_top_scorers,
             get_last_viewed,
             save_last_viewed,

@@ -10,7 +10,7 @@
   import TeamDetailView from "../lib/views/TeamDetailView.svelte";
   import TeamsView from "../lib/views/TeamsView.svelte";
   import { getLeague, getSeason, setLeague, setSeason } from "../lib/stores/context.svelte";
-  import { getView, navigate } from "../lib/stores/view.svelte";
+  import { getView, navigate, saveCurrentView } from "../lib/stores/view.svelte";
 
   let leagues = $state<League[]>([]);
   let seasons = $state<number[]>([]);
@@ -112,6 +112,13 @@
   startup();
 
   const view = $derived(getView());
+
+  $effect(() => {
+    getView();
+    getLeague();
+    getSeason();
+    saveCurrentView();
+  });
 </script>
 
 <div class="flex h-screen w-screen overflow-hidden bg-[var(--color-surface)] text-[var(--color-text)]">

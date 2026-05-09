@@ -22,14 +22,20 @@
   let selectedSeason = $state(0);
 
   $effect(() => {
-    if (!selectedLeagueShortcut && getLeague()?.shortcut) {
-      selectedLeagueShortcut = getLeague()!.shortcut;
+    const activeLeague = getLeague();
+    if (activeLeague?.shortcut && selectedLeagueShortcut !== activeLeague.shortcut) {
+      selectedLeagueShortcut = activeLeague.shortcut;
+    } else if (!selectedLeagueShortcut && leagues[0]?.shortcut) {
+      selectedLeagueShortcut = leagues[0].shortcut;
     }
   });
 
   $effect(() => {
-    if (!selectedSeason && (getSeason() ?? seasons[0])) {
-      selectedSeason = getSeason() ?? seasons[0] ?? 0;
+    const activeSeason = getSeason();
+    if (activeSeason && selectedSeason !== activeSeason) {
+      selectedSeason = activeSeason;
+    } else if (!selectedSeason && seasons[0]) {
+      selectedSeason = seasons[0];
     }
   });
 
@@ -39,7 +45,7 @@
   });
 
   $effect(() => {
-    setSeason(selectedSeason);
+    if (selectedSeason) setSeason(selectedSeason);
   });
 </script>
 
@@ -80,7 +86,11 @@
           ? 'text-[var(--color-text-muted)] cursor-not-allowed opacity-50'
           : 'text-[var(--color-text)] hover:border-[var(--color-bundesliga-red)] hover:text-[var(--color-bundesliga-red)] cursor-pointer'}"
     >
-      ↻ Refresh
+      <svg class="inline-block h-3.5 w-3.5 align-[-2px]" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M16.25 9.25A6.25 6.25 0 1 0 14.4 13.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M16.25 4.75v4.5h-4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <span class="ml-1.5">Refresh</span>
     </button>
   </div>
 </header>

@@ -63,9 +63,12 @@
 <div class="flex-1 overflow-auto p-4 max-w-2xl mx-auto w-full">
   <button
     onclick={() => navigate({ screen: "matches", matchday: fromMatchday })}
-    class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] mb-4 cursor-pointer"
+    class="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] mb-4 cursor-pointer"
   >
-    ← Back to Matchday {fromMatchday}
+    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M12.5 5 7.5 10l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    Back to Matchday {fromMatchday}
   </button>
 
   {#if loading}
@@ -86,7 +89,7 @@
         <div class="flex flex-col items-center shrink-0">
           {#if finalScore(match)}
             {@const s = finalScore(match)!}
-            <span class="text-3xl font-bold tabular-nums">{s.t1} – {s.t2}</span>
+            <span class="text-3xl font-bold tabular-nums">{s.t1} - {s.t2}</span>
           {:else}
             <span class="text-xl text-[var(--color-text-muted)]">vs</span>
           {/if}
@@ -119,7 +122,7 @@
                 <span class="text-xs bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded px-1 py-0.5">{badge}</span>
               {/each}
               <span class="text-[var(--color-text-muted)] tabular-nums text-xs">
-                {goal.score_team1 ?? "?"} – {goal.score_team2 ?? "?"}
+                {goal.score_team1 ?? "?"} - {goal.score_team2 ?? "?"}
               </span>
             </div>
           {/each}
@@ -130,13 +133,13 @@
     <!-- Match metadata -->
     <div class="text-xs text-[var(--color-text-muted)] flex flex-col gap-1">
       {#if match.location?.location_stadium}
-        <span>🏟️ {match.location.location_stadium}{match.location.location_city ? `, ${match.location.location_city}` : ""}</span>
+        <span>Venue: {match.location.location_stadium}{match.location.location_city ? `, ${match.location.location_city}` : ""}</span>
       {/if}
       {#if match.number_of_viewers != null}
-        <span>👥 {formatViewers(match.number_of_viewers)} viewers</span>
+        <span>Attendance: {formatViewers(match.number_of_viewers)} viewers</span>
       {/if}
       {#if match.when_utc}
-        <span>🗓️ {new Date(match.when_utc).toLocaleString()}</span>
+        <span>Date: {new Date(match.when_utc).toLocaleString()}</span>
       {/if}
     </div>
   {/if}

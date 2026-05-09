@@ -49,18 +49,11 @@
       });
       detail = resp.data;
 
-      // Fetch recent matches for this team from matchday 1 as a sample
-      try {
-        const matchResp = await invoke<{ data: Match[] }>("get_matches_for_matchday", {
-          league: league.shortcut,
-          season,
-          groupOrderId: 1,
-        }).catch(() => ({ data: [] as Match[] }));
-
-        recentMatches = matchResp.data
-          .filter((m) => m.team1.id === teamId || m.team2.id === teamId)
-          .slice(0, 6);
-      } catch (_) {}
+      recentMatches = await invoke<Match[]>("get_team_matches", {
+        league: league.shortcut,
+        season,
+        teamName,
+      }).catch(() => []);
     } catch (e) {
       error = String(e);
     } finally {
@@ -100,17 +93,42 @@
 
   function matchScore(m: Match): string {
     const r = m.results?.find((r) => r.result_type === 2) ?? m.results?.find((r) => r.result_type === 1);
-    if (!r) return "–:–";
+    if (!r) return "-:-";
     return `${r.points_team1}:${r.points_team2}`;
   }
+
+  function opponentName(m: Match): string {
+    const opponent = m.team1.id === teamId ? m.team2 : m.team1;
+    return opponent.short_name ?? opponent.name ?? "Unknown";
+  }
+
+  function homeAway(m: Match): string {
+    return m.team1.id === teamId ? "H" : "A";
+  }
+
+  const displayedMatches = $derived(() => {
+    const now = Date.now();
+    const sorted = recentMatches
+      .slice()
+      .sort((a, b) => new Date(a.when_utc ?? 0).getTime() - new Date(b.when_utc ?? 0).getTime());
+    const finished = sorted
+      .filter((m) => m.is_finished)
+      .sort((a, b) => new Date(b.when_utc ?? 0).getTime() - new Date(a.when_utc ?? 0).getTime())
+      .slice(0, 5);
+    const next = sorted.find((m) => !m.is_finished && new Date(m.when_utc ?? 0).getTime() >= now);
+    return next ? [...finished, next] : finished;
+  });
 </script>
 
 <div class="flex-1 overflow-auto p-4 max-w-3xl mx-auto w-full">
   <button
     onclick={() => navigate({ screen: "teams" })}
-    class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] mb-4 cursor-pointer"
+    class="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] mb-4 cursor-pointer"
   >
-    ← Back to Teams
+    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M12.5 5 7.5 10l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    Back to Teams
   </button>
 
   {#if loading}
@@ -130,7 +148,7 @@
         {/if}
         {#if detail.stadium}
           <span class="text-xs text-[var(--color-text-muted)]">
-            🏟️ {detail.stadium}{detail.capacity ? ` (cap. ${detail.capacity})` : ""}
+            Stadium: {detail.stadium}{detail.capacity ? ` (cap. ${detail.capacity})` : ""}
           </span>
         {/if}
       </div>
@@ -150,6 +168,24 @@
           <div class="flex flex-col"><span class="font-bold">{tableEntry.opponent_goals}</span><span class="text-[var(--color-text-muted)] text-xs">GA</span></div>
           <div class="flex flex-col"><span class="font-bold {tableEntry.goal_difference >= 0 ? 'text-green-400' : 'text-[var(--color-bundesliga-red)]'}">{tableEntry.goal_difference > 0 ? "+" : ""}{tableEntry.goal_difference}</span><span class="text-[var(--color-text-muted)] text-xs">GD</span></div>
           <div class="flex flex-col"><span class="font-bold text-[var(--color-bundesliga-red)]">{tableEntry.points}</span><span class="text-[var(--color-text-muted)] text-xs">Pts</span></div>
+        </div>
+      </div>
+    {/if}
+
+    {#if displayedMatches().length > 0}
+      <div class="bg-[var(--color-surface-elevated)] rounded border border-[var(--color-border)] p-3 mb-4">
+        <div class="text-xs uppercase text-[var(--color-text-muted)] mb-2">Recent Matches</div>
+        <div class="flex flex-col">
+          {#each displayedMatches() as match}
+            <div class="grid grid-cols-[4rem_2rem_1fr_4rem] gap-3 py-2 border-b border-[var(--color-border)] last:border-b-0 text-sm items-center">
+              <span class="text-xs text-[var(--color-text-muted)]">
+                {match.when_utc ? new Date(match.when_utc).toLocaleDateString([], { month: "short", day: "numeric" }) : "TBD"}
+              </span>
+              <span class="text-xs text-[var(--color-text-muted)]">{homeAway(match)}</span>
+              <span class="min-w-0 truncate">vs {opponentName(match)}</span>
+              <span class="text-right tabular-nums font-semibold">{matchScore(match)}</span>
+            </div>
+          {/each}
         </div>
       </div>
     {/if}
