@@ -1,68 +1,68 @@
 ## Context
 
-The desktop app header currently exposes season selection as a native `select` bound to a short numeric season list. That works for the current backend, but it will not scale if seasons include historical data, named competitions, or ranges from multiple sources. The picker must remain compact because it lives in the app header beside league selection, live status, and refresh controls.
+The toolbar (`crates/fulltime-ui/src/ui/views/toolbar.rs`) will expose season selection alongside league selection, a refresh control, and a live-match badge (see `bundesliga-sports-ui`). A native `select`-equivalent works for a handful of recent years, but it will not scale if seasons include historical data, named competitions, or ranges from multiple sources. The picker must remain compact because it shares toolbar space with those other controls.
 
-The change should be frontend-first. Existing screens already react to `setSeason`, so the picker should preserve that contract and avoid backend changes unless a future data source returns richer season metadata.
+The change is UI-layer-only. `available_seasons()` already returns a plain `Vec<i32>` (see `bundesliga-sports-ui`'s data layer); this change wraps that in a picker view and preserves the existing "selecting a season updates `NavState`" contract without touching the data layer, unless a future data source returns richer season metadata.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
 - Make season selection searchable, filterable, and sortable.
-- Keep the default header UI compact.
+- Keep the default toolbar UI compact.
 - Make advanced controls disclosable but obvious enough to discover.
 - Support both simple numeric seasons and richer display names that contain one or more years.
 - Keep keyboard and pointer interaction practical for desktop use.
 
 **Non-Goals:**
 
-- Redesign the entire header or app shell.
-- Add a new backend endpoint for season metadata.
-- Persist season picker preferences across app launches unless implementation can do so without changing backend persistence.
-- Support mobile-specific picker behavior; the app has desktop window constraints.
+- Redesign the entire toolbar or app shell.
+- Add a new data-layer entry point for season metadata.
+- Persist season picker preferences across app launches unless implementation can do so without changing the existing `AppViewState` persistence (see `bundesliga-sports-ui`).
+- Support touch/mobile-specific picker behavior; the app has desktop window constraints.
 
 ## Decisions
 
-### 1. Extract a dedicated `SeasonPicker` component
+### 1. Extract a dedicated season-picker view
 
-**Decision**: Replace the inline season `select` in `Header.svelte` with a dedicated `SeasonPicker.svelte` component.
+**Decision**: Add `crates/fulltime-ui/src/ui/views/season_picker.rs` exposing a `render_season_picker(seasons: &[SeasonOption], selected: i32, colors: &ColorTokens, cx) -> impl IntoElement` function (or a small `Entity`-backed component if internal open/search/sort state needs to persist across renders — see Decision 2). `toolbar.rs` keeps ownership of layout and passes the season list, current selection, and a selection callback.
 
-**Rationale**: Search, filter, sort mode, popover state, and keyboard handling are enough complexity to justify a focused component. `Header.svelte` should keep ownership of layout and pass `seasons`, the current selected season, and an `onSelect` callback.
+**Rationale**: Search, filter, sort mode, popover open/close state, and keyboard handling are enough complexity to justify a focused module, matching the file-per-view convention already established by `title_bar.rs`/`sidebar.rs`/`status_bar.rs`.
 
-**Alternative considered**: Keep all logic in `Header.svelte`. Rejected because it would mix header state synchronization with picker-specific UI behavior.
+**Alternative considered**: Keep all logic inline in `toolbar.rs`. Rejected because it would mix toolbar layout with picker-specific interaction state.
 
-### 2. Use a compact trigger plus popover
+### 2. Compact trigger plus popover, backed by a small `Entity`
 
-**Decision**: The header shows a compact season trigger that displays the selected season. Activating it opens a popover anchored to the trigger. The popover contains search, list, and a visible "Options" disclosure row for sorting/filtering controls.
+**Decision**: The toolbar shows a compact season trigger button that displays the selected season. Activating it opens a `gpui-component` popover anchored to the trigger. The popover contains a search input, the season list, and a visible "Options" disclosure row for sorting/filtering controls. Because open/closed state, search text, and sort/filter mode must survive across renders, this is a `SeasonPicker` `Entity<SeasonPicker>` (a small `Render`-implementing struct), not a stateless render function.
 
-**Rationale**: This keeps the header dense and stable while making the enhanced controls discoverable. Users see that additional controls exist without paying the full visual cost by default.
+**Rationale**: This keeps the toolbar dense and stable while making the enhanced controls discoverable. Users see that additional controls exist without paying the full visual cost by default.
 
-**Alternative considered**: Always show search and sort controls directly in the header. Rejected because the header would become crowded and less scannable.
+**Alternative considered**: Always show search and sort controls directly in the toolbar. Rejected because the toolbar would become crowded and less scannable.
 
-### 3. Normalize season records in the frontend
+### 3. `SeasonOption` view model
 
-**Decision**: Convert the current `number[]` seasons into frontend view models:
+**Decision**: Convert the current `Vec<i32>` seasons into a view model at the picker boundary:
 
-```ts
-type SeasonOption = {
-  value: number;
-  label: string;
-  sortYears: number[];
+```rust
+struct SeasonOption {
+    value: i32,
+    label: SharedString,
+    sort_years: Vec<i32>,
 }
 ```
 
-The initial label remains `YYYY/YYYY + 1`. The year parser should be implemented against labels rather than only numeric values so it continues to work if labels become richer later.
+The initial label remains `YYYY/YYYY + 1`. The year parser should work against labels rather than only numeric values so it continues to work if labels become richer later.
 
-**Rationale**: Sorting and filtering need a consistent shape. Keeping this in the frontend avoids backend churn while giving room for future metadata.
+**Rationale**: Sorting and filtering need a consistent shape. Keeping this conversion at the picker boundary avoids touching `available_seasons()` while giving room for future metadata.
 
-**Alternative considered**: Change `get_seasons` to return objects. Rejected for this change because the current requirement is UX behavior and does not require API changes.
+**Alternative considered**: Change `available_seasons()` to return `SeasonOption`s directly. Rejected for this change because the requirement is UX behavior, not a data-layer change.
 
 ### 4. Sorting modes
 
 **Decision**: Support at least two sort modes:
 
-- `name-asc`: locale-aware A-Z collation by label using `Intl.Collator`.
-- `year-desc` and `year-asc`: intelligent chronological sorting by parsed year or year range. The primary year is the first year-like token found in the label; ties fall back to the full parsed range, then label collation.
+- `NameAsc`: case-insensitive A-Z ordering by label using `str::to_lowercase` comparison (no ICU/`Intl.Collator` equivalent is in the dependency tree, and season labels are ASCII digits/slashes, so a full locale-aware collator isn't warranted).
+- `YearDesc`/`YearAsc`: intelligent chronological sorting by parsed year or year range. The primary year is the first year-like token found in the label; ties fall back to the full parsed range, then label ordering.
 
 **Rationale**: A-Z is predictable for named seasons; year-aware sorting handles labels such as `2025/2026`, `2025-26`, `1999`, and `DFB Pokal 2024`.
 
@@ -85,14 +85,14 @@ The implementation can adjust labels if the real season list makes different pre
 
 ## Risks / Trade-offs
 
-- **Popover complexity in a dense header** -> Keep dimensions fixed, use constrained max height, and test at the configured minimum window width.
-- **Ambiguous year parsing** -> Document parser behavior and fall back to name collation when no year is found.
-- **Too many controls hidden behind disclosure** -> The trigger should include a visible chevron/settings affordance, and the popover should show an "Options" row even when collapsed.
-- **Current backend returns only four seasons** -> Build against the same component behavior with synthetic long lists in component tests or local fixtures so the massive-list case is covered.
+- **Popover complexity in a dense toolbar** -> Keep dimensions fixed, use a constrained max height, and test at the configured minimum window width (960px, see `bundesliga-sports-ui`).
+- **Ambiguous year parsing** -> Document parser behavior and fall back to name ordering when no year is found.
+- **Too many controls hidden behind disclosure** -> The trigger should include a visible chevron affordance, and the popover should show an "Options" row even when collapsed.
+- **`available_seasons()` currently returns only four seasons** -> Build against the same component behavior with synthetic long lists in unit tests so the massive-list case is covered.
 
 ## Migration Plan
 
-1. Add the `SeasonPicker` component and helper functions for label generation, year parsing, sorting, searching, and filtering.
-2. Replace the season `select` in `Header.svelte` with the component while preserving the `setSeason` behavior.
-3. Add focused tests for sorting, search, and filters using a long synthetic season list.
-4. Verify the header at normal and minimum desktop widths.
+1. Add the `SeasonPicker` entity and helper functions for label generation, year parsing, sorting, searching, and filtering.
+2. Replace the season placeholder in `toolbar.rs` with the picker while preserving the existing season-selection callback into `NavState`.
+3. Add focused unit tests for sorting, search, and filters using a long synthetic season list.
+4. Verify the toolbar at normal and minimum desktop window widths.

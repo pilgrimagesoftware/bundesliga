@@ -4,9 +4,9 @@
 
 The system SHALL capture response errors from user-visible data loading operations in a shared session-scoped error list.
 
-#### Scenario: Tauri command fails
+#### Scenario: Data-layer fetch fails
 
-- **WHEN** a user-visible Tauri command response fails
+- **WHEN** a user-visible data-layer fetch fails
 - **THEN** the system records an error with operation name, source, timestamp, concise message, and available sanitized details
 
 #### Scenario: View keeps inline error

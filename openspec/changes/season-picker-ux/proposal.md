@@ -1,6 +1,6 @@
 ## Why
 
-The current season picker is a basic select control, which becomes tedious as soon as the available season list grows beyond a few recent years. Users need a fast way to find, narrow, and order seasons without cluttering the main header.
+The current season picker is a basic select control, which becomes tedious as soon as the available season list grows beyond a few recent years. Users need a fast way to find, narrow, and order seasons without cluttering the toolbar.
 
 ## What Changes
 
@@ -10,8 +10,8 @@ The current season picker is a basic select control, which becomes tedious as so
 - Add configurable sorting with at least:
   - A-Z collation by display name.
   - Intelligent chronological sorting based on year or year ranges found in the season name.
-- Preserve a compact default header control while making advanced controls easy to discover.
-- Keep the selected season behavior compatible with existing league/table/matches/teams flows.
+- Preserve a compact default toolbar control while making advanced controls easy to discover.
+- Keep the selected season behavior compatible with existing table/matches/teams flows.
 
 ## Capabilities
 
@@ -25,7 +25,7 @@ The current season picker is a basic select control, which becomes tedious as so
 
 ## Impact
 
-- Frontend season picker UI in `src/lib/components/Header.svelte`, likely extracted into a dedicated component.
-- Frontend state for season selection and optional picker preferences.
-- Existing `get_seasons` command consumers; no backend API changes are required unless season metadata grows beyond plain year values.
-- Visual behavior in the desktop app header and any future season selection surfaces.
+- `crates/fulltime-ui/src/ui/views/toolbar.rs`: Replace the placeholder season control with a dedicated season-picker component.
+- `crates/fulltime-ui/src/ui/views/season_picker.rs` (new): Picker trigger, popover, search, filter, and sort UI, built on `gpui-component`'s popover/list primitives.
+- `crates/fulltime-ui/src/data/seasons.rs`: `available_seasons()` (see `bundesliga-sports-ui`) stays the data source; no data-layer changes are required unless season metadata grows beyond plain year values.
+- Visual behavior in the toolbar and any future season selection surfaces.

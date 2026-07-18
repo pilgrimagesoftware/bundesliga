@@ -1,112 +1,94 @@
-## 1. Project Setup
+## 1. Workspace Setup
 
-- [ ] 1.1 Install Tailwind v4: `pnpm add -D tailwindcss @tailwindcss/vite`
-- [ ] 1.2 Add `@tailwindcss/vite` plugin to `vite.config.js`
-- [ ] 1.3 Create `src/app.css` with `@import "tailwindcss"` and `@theme` block (dark bg, bundesliga red, surface colors, border color)
-- [ ] 1.4 Import `app.css` in `src/routes/+layout.svelte` (create if needed)
-- [ ] 1.5 Update `tauri.conf.json`: window width 1200, height 800, minWidth 960, minHeight 640, resizable true
-- [ ] 1.6 Add Rust dependencies to `src-tauri/Cargo.toml`: `chrono` (with serde feature), `strsim`
+- [ ] 1.1 Add `openligadb` and `strsim` to `[workspace.dependencies]` in the root `Cargo.toml`
+- [ ] 1.2 Add `openligadb` and `strsim` to `crates/fulltime-ui/Cargo.toml`'s `[dependencies]`
+- [ ] 1.3 Grow the main window bounds in `crates/fulltime-ui/src/ui/app/mod.rs::open_main_window` to 1200×800, resizable, min 960×640
+- [ ] 1.4 Extend `ColorTokens` in `crates/fulltime-ui/src/data/theme.rs` with `zone_champions_league`, `zone_europa_league`, `zone_relegation`, `live_indicator` fields for both `pitch_colors` and `pitch_night_colors`
 
-## 2. Rust Backend — Core Fixes and Stateless Commands
+## 2. Data Layer — Models and OpenLigaDB Fetch
 
-- [ ] 2.1 Remove `BundesligaState` struct and all references to it
-- [ ] 2.2 Create `AppState` struct with `cooldown_tracker: HashMap<&'static str, Instant>` and `app_data_dir: PathBuf`; register with `tauri::Builder::manage()`
-- [ ] 2.3 Fix `get_leagues`: remove unused state param
-- [ ] 2.4 Fix `get_seasons`: implement using `chrono::Local::now().year()` to return current year and last 3
-- [ ] 2.5 Fix `get_table`: accept `league: String, season: i32` params; remove state dependency
-- [ ] 2.6 Add `get_matchdays(league, season)` command using `Group::available()`
-- [ ] 2.7 Add `get_current_matchday(league)` command using `Group::current()`
-- [ ] 2.8 Add `get_matches_for_matchday(league, season, group_order_id)` command using `Match::by_league_group()`
-- [ ] 2.9 Add `get_match_detail(match_id)` command using `Match::get()`
-- [ ] 2.10 Add `get_teams(league, season)` command using `Team::available()`
-- [ ] 2.11 Add `get_top_scorers(league, season)` command using `GoalGetter::list()`
-- [ ] 2.12 Register all new commands in `tauri::generate_handler![]`
+- [ ] 2.1 Create `crates/fulltime-ui/src/data/models.rs`: `League`, `Season`, `TableTeam`, `Group` (matchday), `Match`, `Goal` types (re-export or wrap the `openligadb` crate's equivalents as needed)
+- [ ] 2.2 Create `crates/fulltime-ui/src/data/leagues.rs`: `fn available_leagues() -> Vec<League>`
+- [ ] 2.3 Create `crates/fulltime-ui/src/data/seasons.rs`: `fn available_seasons() -> Vec<i32>` using `chrono::Local::now().year()` (current year and last 3)
+- [ ] 2.4 Create `crates/fulltime-ui/src/data/table.rs`: `async fn fetch_table(league, season) -> Result<Vec<TableTeam>>` via `openligadb::TableTeam::get_bl_table`
+- [ ] 2.5 Create `crates/fulltime-ui/src/data/matchdays.rs`: `async fn fetch_matchdays(league, season)`, `async fn fetch_current_matchday(league)` via `openligadb::Group`
+- [ ] 2.6 Create `crates/fulltime-ui/src/data/matches.rs`: `async fn fetch_matches_for_matchday(league, season, group_order_id)`, `async fn fetch_match_detail(match_id)` via `openligadb::Match`
+- [ ] 2.7 Create `crates/fulltime-ui/src/data/teams.rs`: `async fn fetch_teams(league, season)` via `openligadb::Team`
 
-## 3. TypeScript Types and Frontend State Model
+## 3. Navigation State
 
-- [ ] 3.1 Add `Match.ts` type: id, when_utc, is_finished, team1, team2, results, goals, location, group, number_of_viewers
-- [ ] 3.2 Add `Goal.ts` type: id, score_team1, score_team2, match_minute, goal_getter_name, is_penalty, is_own_goal, is_overtime
-- [ ] 3.3 Add `Group.ts` type: id, name, order_id
-- [ ] 3.4 Add `Player.ts` type: name, position, nationality, date_of_birth, photo_url
-- [ ] 3.5 Add `TeamDetail.ts` type: id, name, short_name, icon_url, founded, stadium, capacity, description, squad (Player[]), staff (Staff[])
-- [ ] 3.6 Add `AppViewState.ts` type mirroring the Rust struct
-- [ ] 3.7 Add `CachedResponse<T>.ts` generic wrapper type
-- [ ] 3.8 Add frontend `AppView` type for the in-page state machine
-- [ ] 3.9 Update `TableTeam.ts` with any missing fields (goals, opponentGoals already present — verify)
-- [ ] 3.10 Create `src/lib/stores/view.svelte.ts`: export `$state` view object of type `AppView`; export `navigate(view)` helper
-- [ ] 3.11 Create `src/lib/stores/context.svelte.ts`: export `$state` for `league`, `season`; export `setLeague`, `setSeason` helpers
+- [ ] 3.1 Define `NavScreen` enum in `crates/fulltime-ui/src/data/nav.rs`: `Table`, `Matches { matchday }`, `MatchDetail { match_id, from_matchday }`, `Teams`, `TeamDetail { team_id }`
+- [ ] 3.2 Define `NavState` (current screen, current league, current season) as a GPUI global or a `RootView` field
+- [ ] 3.3 Add a `navigate(screen: NavScreen)` method that updates `NavState` and triggers a re-render
 
-## 4. Frontend — App Shell and Table Vertical Slice
+## 4. Sidebar and Toolbar
 
-- [ ] 4.1 Rewrite `src/routes/+page.svelte`: app shell with sidebar + header + content pane layout; no data fetching here
-- [ ] 4.2 Create `src/lib/components/Sidebar.svelte`: three nav items (Table, Matches, Teams) with active highlight using Bundesliga red
-- [ ] 4.3 Create `src/lib/components/Header.svelte`: app name, league picker, season picker, live badge, refresh button shell
-- [ ] 4.4 Create `src/lib/views/TableView.svelte`: fetch table on mount and on league/season change using `$effect`
-- [ ] 4.5 Implement standings table with columns: #, logo, name, P, W, D, L, GF, GA, GD, Pts
-- [ ] 4.6 Add colored left-border zone indicators (top 2: CL blue, rows 3-4: EL orange, bottom 2: red)
-- [ ] 4.7 Make each team row clickable — navigates to `team_detail`
+- [ ] 4.1 Populate `crates/fulltime-ui/src/ui/views/sidebar.rs` with three nav items (Table, Matches, Teams), active-state highlight using `colors.accent`/`accent_soft`
+- [ ] 4.2 Populate `crates/fulltime-ui/src/ui/views/toolbar.rs` with a league picker, season picker (placeholder select until `season-picker-ux` lands), a refresh control, and a live-match badge slot
+- [ ] 4.3 Wire sidebar item clicks to `navigate(...)`
 
-## 5. Frontend — Matches Flow
+## 5. Table View
 
-- [ ] 5.1 Create `src/lib/views/MatchesView.svelte`: accept `matchday` prop; fetch matchday list and matches
-- [ ] 5.2 Implement matchday heading and prev/next navigation buttons (disable at boundaries)
-- [ ] 5.3 Create `src/lib/components/MatchCard.svelte`: home/away logos + names, score, status label (kick-off time / FT / live minute)
-- [ ] 5.4 Implement live detection logic: `!is_finished && new Date(when_utc) <= now <= new Date(when_utc) + 2h`
-- [ ] 5.5 Add 30-second auto-refresh using `$effect` with `setInterval`; clean up on component destroy
-- [ ] 5.6 Create `src/lib/views/MatchDetailView.svelte`: accept `matchId` and `fromMatchday` props; fetch match detail on mount
-- [ ] 5.7 Implement match header: both team logos, names, and score side-by-side
-- [ ] 5.8 Implement goal timeline list: sorted by minute, running score, scorer name, PEN/OG badges
-- [ ] 5.9 Implement match metadata footer: venue, viewer count (formatted), match date/time
-- [ ] 5.10 Back button navigates to `{ screen: 'matches', matchday: fromMatchday }`
+- [ ] 5.1 Create `crates/fulltime-ui/src/ui/views/table_view.rs`: fetch table on mount and on league/season change via `cx.spawn`
+- [ ] 5.2 Render standings columns: #, logo, name, P, W, D, L, GF, GA, GD, Pts
+- [ ] 5.3 Apply zone-accent left borders using the new `ColorTokens` fields (top 2 rows: Champions League; rows 3-4: Europa League; bottom 2: relegation)
+- [ ] 5.4 Make each team row clickable — calls `navigate(NavScreen::TeamDetail { team_id })`
+- [ ] 5.5 Replace `root_view.rs`'s placeholder toolbar child with the real screen router (Table/Matches/Teams/detail views based on `NavState`)
 
-## 6. Rust Backend — App State Persistence
+## 6. Matches Flow
 
-- [ ] 6.1 Define `AppViewState` serde struct: `last_opened`, `league`, `season`, `view`, `matchday` (Option), `selected_team_id` (Option)
-- [ ] 6.2 Ensure `app_data_dir` is created on first run (use `std::fs::create_dir_all`)
-- [ ] 6.3 Add `get_last_viewed()` command: read `<app_data_dir>/app_state.json`; return None if missing
-- [ ] 6.4 Add `save_last_viewed(state: AppViewState)` command: write JSON to `<app_data_dir>/app_state.json`
-- [ ] 6.5 Implement startup logic in `+page.svelte`: invoke `get_last_viewed`, check 48h threshold, navigate accordingly
-- [ ] 6.6 Update `navigate(view)` and context setters to persist on navigation and league/season changes
+- [ ] 6.1 Create `crates/fulltime-ui/src/ui/views/matches_view.rs`: accept current matchday, fetch matchday list and matches
+- [ ] 6.2 Render matchday heading and prev/next navigation (disable at boundaries)
+- [ ] 6.3 Render match cards: home/away logos + names, score, status label (kick-off time / FT / live minute)
+- [ ] 6.4 Implement live detection: `!is_finished && now in [when_utc, when_utc + 2h]`
+- [ ] 6.5 Add a 30-second auto-refresh timer (`cx.spawn` loop with `Timer::after`) while the Matches or Match Detail view is active; skip silently if within cooldown
+- [ ] 6.6 Create `crates/fulltime-ui/src/ui/views/match_detail_view.rs`: fetch match detail on mount for `match_id`
+- [ ] 6.7 Render match header: both team logos, names, score side-by-side
+- [ ] 6.8 Render goal timeline: sorted by minute, running score, scorer name, PEN/OG badges; empty state when no goals
+- [ ] 6.9 Render match metadata: venue, viewer count (formatted), match date/time
+- [ ] 6.10 Back control calls `navigate(NavScreen::Matches { matchday: from_matchday })`
 
-## 7. Frontend — Teams Flow Baseline
+## 7. App State Persistence
 
-- [ ] 7.1 Create `src/lib/views/TeamsView.svelte`: fetch teams on mount; render grid of TeamCard components
-- [ ] 7.2 Create `src/lib/components/TeamCard.svelte`: team logo + name card; click navigates to team detail
-- [ ] 7.3 Add baseline `get_team_detail(team_id, league, season)` command using OpenLigaDB data only (identity, table row, recent matches)
-- [ ] 7.4 Create `src/lib/views/TeamDetailView.svelte`: accept `teamId` prop; invoke `get_team_detail` on mount
-- [ ] 7.5 Implement identity section: logo, name, founded year, stadium/capacity (hide if unavailable)
-- [ ] 7.6 Implement season stats row: P, W, D, L, GF, GA, GD, Pts, league position
-- [ ] 7.7 Implement recent matches section: up to 5 finished matches + next upcoming match; show opponent, date, score, H/A
-- [ ] 7.8 Show graceful "details unavailable" fallback when enrichment data is absent
+- [ ] 7.1 Define `AppViewState` serde struct: `last_opened`, `league`, `season`, `nav` (serialized `NavScreen`), `selected_team_id` (Option)
+- [ ] 7.2 Add a `data_dir()` helper alongside `platform_log_dir` in `fulltime-core` (or a new shared module) resolving `<app-data>/state`
+- [ ] 7.3 Implement `load_last_viewed() -> Option<AppViewState>`: read `<data_dir>/app_state.json`
+- [ ] 7.4 Implement `save_last_viewed(state: &AppViewState)`: write JSON to `<data_dir>/app_state.json`
+- [ ] 7.5 On startup (`ui::app::setup`), load last-viewed state; if `last_opened` is within 48h, restore; else default to the current matchday of the default league
+- [ ] 7.6 Persist on every navigation and league/season change
 
-## 8. Rust Backend — Rate Limiting
+## 8. Teams Flow Baseline
 
-- [ ] 8.1 Add `check_cooldown(category, min_secs)` helper in AppState: returns `(bool, Option<u64>)` — (is_fresh, next_refresh_ms)
-- [ ] 8.2 Define a `CachedResponse<T>` wrapper struct: `{ data: T, cached: bool, next_refresh_at: Option<u64> }`; use as return type for rate-limited commands
-- [ ] 8.3 Store last successful response per category in AppState to serve during cooldown
-- [ ] 8.4 Wrap `get_table` with cooldown check (60s); return cached payload envelope if within window
-- [ ] 8.5 Wrap `get_matches_for_matchday` with cooldown check (30s)
-- [ ] 8.6 Wrap `get_matchdays` with cooldown check (5m)
-- [ ] 8.7 Wrap `get_team_detail` with cooldown check (5m)
+- [ ] 8.1 Create `crates/fulltime-ui/src/ui/views/teams_view.rs`: fetch teams on mount; render grid of team cards
+- [ ] 8.2 Team card click calls `navigate(NavScreen::TeamDetail { team_id })`
+- [ ] 8.3 Create `crates/fulltime-ui/src/data/team_detail.rs`: `async fn fetch_team_detail_baseline(team_id, league, season)` using OpenLigaDB data only (identity, table row, recent matches)
+- [ ] 8.4 Create `crates/fulltime-ui/src/ui/views/team_detail_view.rs`: fetch baseline team detail on mount
+- [ ] 8.5 Render identity section: logo, name, founded year, stadium/capacity (hide if unavailable)
+- [ ] 8.6 Render season stats row: P, W, D, L, GF, GA, GD, Pts, league position
+- [ ] 8.7 Render recent matches: up to 5 finished matches + next upcoming match; opponent, date, score, H/A
+- [ ] 8.8 Show a graceful "details unavailable" fallback when enrichment data is absent
 
-## 9. Rust Backend — TheSportsDB Integration and Team Enrichment
+## 9. Rate Limiting
 
-- [ ] 9.1 Define `TheSportsDbTeam` serde struct (team fields: founded, stadium, capacity, description, country)
-- [ ] 9.2 Define `TheSportsDbPlayer` serde struct (name, position, nationality, date_of_birth, photo_url)
-- [ ] 9.3 Define `TheSportsDbStaff` serde struct (name, role)
-- [ ] 9.4 Expand `TeamDetail` serde struct to include TheSportsDB fields + squad + staff
-- [ ] 9.5 Implement `search_thesportsdb_team(name)` async fn: GET `searchteams.php?t=<name>`, return best match with Jaro-Winkler score using `strsim`
-- [ ] 9.6 Implement `fetch_thesportsdb_players(tsdb_team_id)` async fn: GET `lookup_all_players.php?id=<id>`
-- [ ] 9.7 Implement `read_team_cache(team_id, app_data_dir)` fn: read JSON file, check `cached_at` TTL (30 days), return None if missing or stale
-- [ ] 9.8 Implement `write_team_cache(team_id, data, app_data_dir)` fn: write JSON with `cached_at` timestamp
-- [ ] 9.9 Upgrade `get_team_detail(...)`: check cache → if miss, search TSDB → fetch players/staff → assemble enriched `TeamDetail` → write cache → return with source/fallback metadata
-- [ ] 9.10 Implement squad section: grouped by position (GK, DF, MF, FW); show name, nationality, DOB/age
-- [ ] 9.11 Implement staff section: name and role list; hide section if no staff data
-- [ ] 9.12 Show "Squad data unavailable" placeholder when TheSportsDB match failed
+- [ ] 9.1 Create `crates/fulltime-ui/src/data/cache.rs`: `DataCache` struct with `cooldown_tracker: HashMap<&'static str, Instant>` and `last_responses: HashMap<String, serde_json::Value>`, held as a GPUI global
+- [ ] 9.2 Define a `Cached<T>` wrapper: `{ data: T, cached: bool, next_refresh_at: Option<Instant> }`
+- [ ] 9.3 Add a `with_cache` helper (see `cache-helper-abstraction` change) and use it to wrap `fetch_table` (60s), `fetch_matches_for_matchday` (30s), `fetch_matchdays` (5m), `fetch_team_detail` (5m)
 
-## 10. Frontend — Refresh and Cooldown UX
+## 10. TheSportsDB Integration and Team Enrichment
 
-- [ ] 10.1 Implement cooldown timer in Header: derive `isOnCooldown` and `lastUpdatedLabel` from `CachedResponse` metadata using `$derived`
-- [ ] 10.2 Disable refresh button and show "last updated X ago" label during cooldown
-- [ ] 10.3 Use `$effect` with `setInterval(1000)` to update the "X ago" label each second while on cooldown
-- [ ] 10.4 Re-enable button when cooldown expires (reactive, no user action needed)
+- [ ] 10.1 Define `TheSportsDbTeam`, `TheSportsDbPlayer`, `TheSportsDbStaff` serde structs (see `staff-implementation` change for the staff field)
+- [ ] 10.2 Expand the team detail model to include TheSportsDB fields + squad + staff
+- [ ] 10.3 Implement `search_thesportsdb_team(name)` async fn: GET `searchteams.php?t=<name>`, return best match with Jaro-Winkler score via `strsim`
+- [ ] 10.4 Implement `fetch_thesportsdb_players(tsdb_team_id)` async fn: GET `lookup_all_players.php?id=<id>`
+- [ ] 10.5 Implement `read_team_cache`/`write_team_cache(team_id, app_data_dir)`: JSON file per team under `<data_dir>/team_cache/`, `cached_at` TTL check (30 days)
+- [ ] 10.6 Upgrade `fetch_team_detail`: check cache → if miss, search TSDB → fetch players/staff → assemble enriched detail → write cache → return with source/fallback metadata
+- [ ] 10.7 Render squad grouped by position (GK, DF, MF, FW): name, nationality, DOB/age
+- [ ] 10.8 Render staff section: name and role list; hide section if no staff data
+- [ ] 10.9 Show "Squad data unavailable" placeholder when TheSportsDB match failed
+
+## 11. Refresh and Cooldown UX
+
+- [ ] 11.1 Derive `is_on_cooldown`/`last_updated_label` from the active view's `Cached<T>` metadata in the toolbar
+- [ ] 11.2 Disable the refresh control and show "last updated X ago" during cooldown
+- [ ] 11.3 Tick the "X ago" label every second while on cooldown (`cx.spawn` loop with `Timer::after(Duration::from_secs(1))`)
+- [ ] 11.4 Re-enable the refresh control when cooldown expires, no user action needed

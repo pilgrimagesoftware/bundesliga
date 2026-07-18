@@ -120,8 +120,8 @@ The Statistics section SHALL display a Qualification Scenarios section for Bunde
 ---
 
 ### Requirement: Team detail — Statistics section uses existing fetched data
-The Statistics section SHALL derive all its values from data already fetched by `TeamDetailView` (the `tableEntry` from `get_table` and the full match list from `get_team_matches`). No additional Tauri `invoke` calls SHALL be made specifically for the Statistics section.
+The Statistics section SHALL derive all its values from data already fetched by the team detail view (the table entry and the full match list for the team). No additional data-layer fetches SHALL be made specifically for the Statistics section.
 
 #### Scenario: No additional network requests made for stats
 - **WHEN** the Statistics section is expanded
-- **THEN** no new `invoke` calls are triggered; all values are computed from already-loaded state
+- **THEN** no new fetches are triggered; all values are computed from already-loaded state

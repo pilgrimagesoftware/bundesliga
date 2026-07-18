@@ -8,7 +8,7 @@ The app SHALL display a league standings table when the Table nav item is active
 - **THEN** each row displays position number, team logo image, team name, P, W, D, L, GF, GA, GD, Pts in that order
 
 #### Scenario: Table rows sorted by points
-- **WHEN** table data is returned from the backend
+- **WHEN** table data is returned from the data layer
 - **THEN** rows are ordered by points descending; ties broken by goal difference then goals scored
 
 ### Requirement: Visual zone indicators

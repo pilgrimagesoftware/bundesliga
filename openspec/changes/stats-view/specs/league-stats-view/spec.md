@@ -177,15 +177,15 @@ The League Stats view SHALL display a European qualification section for the top
 ---
 
 ### Requirement: League Stats view — loading and refresh
-The Stats view SHALL display a loading skeleton while `get_league_stats` data is being fetched. The view SHALL support a `refresh()` method that re-invokes `get_league_stats` and updates `onCooldownChange` for Header integration.
+The Stats view SHALL display a loading skeleton while league stats data is being fetched. The view SHALL support a refresh action that re-fetches league stats and updates the toolbar's cooldown indicator.
 
 #### Scenario: Loading skeleton shown during fetch
 - **WHEN** the Stats view mounts and data has not yet loaded
 - **THEN** placeholder loading blocks are shown instead of stat sections
 
 #### Scenario: Refresh re-fetches and updates cooldown state
-- **WHEN** the Header refresh button is clicked while the Stats view is active
-- **THEN** `get_league_stats` is re-invoked and the cooldown state is updated
+- **WHEN** the toolbar refresh control is activated while the Stats view is active
+- **THEN** league stats are re-fetched and the cooldown state is updated
 
 ---
 

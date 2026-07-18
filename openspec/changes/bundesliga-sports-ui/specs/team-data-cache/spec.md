@@ -9,7 +9,7 @@ When team detail is requested, the system SHALL attempt to enrich the baseline O
 
 #### Scenario: No match above threshold
 - **WHEN** no TheSportsDB result has similarity ≥ 0.85
-- **THEN** the backend returns a response with `squad: null, staff: null` and `source: "openligadb_only"`
+- **THEN** the data layer returns a response with `squad: null, staff: null` and `source: "openligadb_only"`
 
 ### Requirement: Local JSON cache for team detail
 The system SHALL store TheSportsDB responses as JSON files in `<app_data_dir>/team_cache/<openligadb_team_id>.json`. Each cache file SHALL include the fetched data and a `cached_at` ISO 8601 timestamp.
