@@ -1,0 +1,54 @@
+[workspace]
+default-members = ["crates/fulltime-core", "crates/fulltime-ui"]
+members = [
+    "crates/fulltime-core",
+    "crates/fulltime-ui",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+description = "FullTime desktop frontend in Rust"
+license = "MIT"
+rust-version = "1.95"
+
+[workspace.lints.rust]
+unsafe_code           = "deny"
+unused_qualifications = "deny"
+
+[workspace.lints.clippy]
+expect_used = "deny"
+unwrap_used = "deny"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = "1"
+dirs = "6"
+thiserror = "2"
+tracing = "0.1"
+fulltime-ui = { path = "crates/fulltime-ui" }
+fulltime-core = { path = "crates/fulltime-core" }
+tokio = { version = "1", features = ["rt-multi-thread"] }
+gpui = { git = "https://github.com/zed-industries/zed", rev = "1d217ee39d381ac101b7cf49d3d22451ac1093fe" }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "1d217ee39d381ac101b7cf49d3d22451ac1093fe", features = ["font-kit"] }
+gpui-component = { git = "https://github.com/longbridge/gpui-component", rev = "be4c5d30e0a51d5bfb2df93477a05050a50bf889" }
+gpui-component-assets = { git = "https://github.com/longbridge/gpui-component", rev = "be4c5d30e0a51d5bfb2df93477a05050a50bf889" }
+cocoa = "=0.26.0"
+cocoa-foundation = "=0.2.0"
+const_format = "0.2"
+convert_case = "0.8.0"
+core-foundation = "=0.10.0"
+core-foundation-sys = "0.8.6"
+core-video = { version = "0.6.1", features = ["metal"] }
+metal = "0.33"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tracing-appender = "0.2"
+rust-i18n = "4"
+chrono = "0.4"
+sys-locale = "0.3"
+open = "5"
+rust-embed = "8.11"
+sentry = { version = "0.48", default-features = false, features = ["backtrace", "contexts", "panic", "reqwest", "rustls"] }
+sentry-tracing = "0.48"

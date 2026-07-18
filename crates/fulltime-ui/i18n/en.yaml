@@ -1,0 +1,17 @@
+_version: 2
+sidebar:
+  app_name: FullTime
+menu:
+  app_about: About FullTime
+  app_services: Services
+  app_hide: Hide FullTime
+  app_hide_others: Hide Others
+  app_show_all: Show All
+  app_quit: Quit FullTime
+  app_title: FullTime
+  window_title: Window
+  window_minimize: Minimize
+  window_zoom: Zoom
+  help_title: Help
+status_bar:
+  placeholder: No leagues loaded yet

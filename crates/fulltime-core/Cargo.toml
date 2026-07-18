@@ -1,0 +1,84 @@
+[package]
+name = "fulltime-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+# Disables the implicit `src/main.rs` binary target (which would otherwise be
+# named after `[package] name`, "fulltime-core") so the `[[bin]]` below is the
+# only binary this package produces.
+autobins = false
+
+[lints]
+workspace = true
+
+# Named "FullTime" (not the default "fulltime-core", derived from `[package]
+# name`) so the process name macOS shows in the Application menu's bold title
+# matches the product name in dev builds too, not just packaged ones
+# (cargo-packager already sets `product-name = "FullTime"` below for packaged
+# artifacts).
+[[bin]]
+name = "FullTime"
+path = "src/main.rs"
+
+[dependencies]
+tokio.workspace = true
+fulltime-ui.workspace = true
+gpui_platform.workspace = true
+gpui.workspace = true
+gpui-component.workspace = true
+gpui-component-assets.workspace = true
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-appender = { workspace = true }
+dirs = { workspace = true }
+open = { workspace = true }
+thiserror = { workspace = true }
+rust-embed = { workspace = true }
+sentry = { workspace = true, optional = true }
+sentry-tracing = { workspace = true, optional = true }
+serde_json = { workspace = true }
+reqwest = { workspace = true }
+
+[features]
+# Enables Sentry crash/error reporting. Compiled in only for CI-built release
+# artifacts; source builds (`cargo build`/`cargo test`/`cargo run` with no
+# explicit feature flags) never pull in the Sentry dependency.
+sentry = ["dep:sentry", "dep:sentry-tracing"]
+
+# cargo-packager configuration (`cargo install cargo-packager`). Invoked in CI as
+# `cargo packager --release -p fulltime-core --formats <fmt>`; the binary is
+# auto-detected from this package's `[[bin]]` target.
+#
+# Icon paths are relative to this manifest's directory: cargo-packager `cd`s
+# to the directory of the Cargo.toml it read `[package.metadata.packager]`
+# from before resolving any relative paths in the config.
+[package.metadata.packager]
+name = "fulltime"
+product-name = "FullTime"
+identifier = "com.pilgrimagesoftware.fulltime"
+description = "FullTime desktop frontend"
+homepage = "https://github.com/pilgrimagesoftware/FullTime.rs"
+authors = ["Paul Schifferer <paul@schifferers.net>"]
+publisher = "Pilgrimage Software"
+license_file = "../../LICENSE.md"
+copyright = "Copyright (c) 2026 Pilgrimage Software"
+category = "Utility"
+before-packaging-command = "cargo build --release --package fulltime-core --features sentry"
+icons = ["../../assets/icon/icon.png", "../../assets/icon/icon.icns", "../../assets/icon/icon.ico"]
+
+[package.metadata.packager.deb]
+depends = ["libsecret-1-0"]
+
+[package.metadata.packager.appimage]
+libs = ["libsecret-1.so.0"]
+
+[package.metadata.packager.dmg]
+window-size = { width = 660, height = 400 }
+
+[package.metadata.packager.nsis]
+installer-mode = "currentUser"
+
+[package.metadata.packager.wix]
+# Uses the default WiX-generated GUIDs; upgrade-code intentionally unset here
+# since this is the first packaged release (no prior MSI to upgrade from).
