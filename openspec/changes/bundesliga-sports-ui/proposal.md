@@ -42,3 +42,11 @@ The app is being rebuilt from a broken SvelteKit + Tauri proof-of-concept into a
 - `crates/fulltime-ui/src/ui/app/mod.rs`: `open_main_window`'s bounds grow to 1200×800 (resizable, min 960×640), matching the original Tauri window-size intent.
 - `crates/fulltime-core/src/app/mod.rs`: No service-factory wiring needed (unlike Libri) — OpenLigaDB/TheSportsDB access lives entirely in `fulltime-ui`.
 - `Cargo.toml` (workspace): Add `openligadb`, `strsim` (fuzzy name matching) to `[workspace.dependencies]`.
+
+## Follow-up: superseded by `ui-skeleton`
+
+The `ui-skeleton` change (implemented) removed `crates/fulltime-ui/src/ui/views/sidebar.rs` and
+`toolbar.rs`, replacing them with a single persistent header (`header.rs`) and per-screen content
+views. This proposal's references to `sidebar.rs`/`toolbar.rs` above are stale and need revision
+against the new header-based shell (`AppScreen` enum, `header.rs`, `views/components/`) before
+implementation starts.
