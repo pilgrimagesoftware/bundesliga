@@ -8,15 +8,18 @@
 use std::collections::HashSet;
 
 use gpui::prelude::*;
-use gpui::{Context, Render, Window, div, px};
+use gpui::{Context, Entity, Render, Window, div, px};
+use gpui_component::table::TableState;
 
-use crate::data::theme::{FullTimeTheme, League, ThemeKey};
+use crate::data::theme::{FullTimeTheme, League, ThemeKey, league_accent, zone_colors};
 use crate::ui::app_state::{AppScreen, MatchTab};
 use crate::ui::views::header::render_header;
 use crate::ui::views::history::render_history_screen;
 use crate::ui::views::match_view::render_match_screen;
 use crate::ui::views::player::render_player_screen;
-use crate::ui::views::standings::render_standings_screen;
+use crate::ui::views::standings::{
+    StandingsTableDelegate, new_standings_table, render_standings_screen,
+};
 use crate::ui::views::status_bar::render_status_bar;
 use crate::ui::views::team::render_team_screen;
 
@@ -26,14 +29,29 @@ pub struct RootView {
     active_league:     League,
     active_match_tab:  MatchTab,
     history_open_rows: HashSet<usize>,
+    standings_table:   Entity<TableState<StandingsTableDelegate>>,
 }
 
 impl RootView {
-    pub fn new(_window: &mut Window, _cx: &mut Context<Self>) -> Self {
-        Self { active_screen:     AppScreen::Standings,
-               active_league:     League::Bundesliga,
-               active_match_tab:  MatchTab::Summary,
-               history_open_rows: HashSet::new(), }
+    pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
+        let view = Self { active_screen:     AppScreen::Standings,
+                          active_league:     League::Bundesliga,
+                          active_match_tab:  MatchTab::Summary,
+                          history_open_rows: HashSet::new(),
+                          standings_table:   new_standings_table(window, cx), };
+
+        // The standings `DataTable` measures its scroll-container bounds
+        // from the completed window layout; those bounds are still zero on
+        // the very first paint (before this view's first full layout
+        // pass), so its virtualized rows render empty until something
+        // triggers a second render. Force that second render explicitly
+        // rather than relying on the user resizing the window.
+        let entity = cx.entity();
+        window.on_next_frame(move |_window, cx| {
+                  entity.update(cx, |_, cx| cx.notify());
+              });
+
+        view
     }
 
     pub fn set_screen(&mut self, screen: AppScreen, cx: &mut Context<Self>) {
@@ -43,6 +61,10 @@ impl RootView {
 
     pub fn set_league(&mut self, league: League, cx: &mut Context<Self>) {
         self.active_league = league;
+        self.standings_table.update(cx, |table, cx| {
+                                table.delegate_mut().set_accent(league_accent(league));
+                                table.refresh(cx);
+                            });
         cx.notify();
     }
 
@@ -70,6 +92,10 @@ impl RootView {
               crate::data::theme::apply_theme_colors(theme, &next_theme.colors);
           });
         cx.set_global(next_theme);
+        self.standings_table.update(cx, |table, cx| {
+                                table.delegate_mut().set_zones(zone_colors(next_key));
+                                table.refresh(cx);
+                            });
         cx.notify();
     }
 }
@@ -82,6 +108,7 @@ impl Render for RootView {
         let active_league = self.active_league;
         let active_match_tab = self.active_match_tab;
         let history_open_rows = self.history_open_rows.clone();
+        let standings_table = self.standings_table.clone();
 
         div()
             .flex()
@@ -107,7 +134,8 @@ impl Render for RootView {
                     .gap(px(20.0))
                     .child(match active_screen {
                         AppScreen::Standings => {
-                            render_standings_screen(&colors, active_league, cx).into_any_element()
+                            render_standings_screen(&colors, active_league, &standings_table, cx)
+                                .into_any_element()
                         }
                         AppScreen::Match => {
                             render_match_screen(&colors, active_match_tab, cx).into_any_element()
