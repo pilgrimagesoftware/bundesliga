@@ -1,12 +1,18 @@
-//! FullTime theme system: a light and a dark variant, seeded from the
-//! canvas colors used in the Claude Design mockup ("Football Scores and
-//! tracking app") — `#f0eee6` (light) / `#2e2c26` (dark). The rest of the
-//! palette is a placeholder pending a full design-token extraction from that
-//! mockup, which is follow-up work once real UI screens are being built.
+//! FullTime theme system: a light and a dark variant, matching the Style A
+//! palette, typography, and radius tokens of the Claude Design mockup
+//! ("Football Scores and tracking app") — canvas colors `#f0eee6` (light) /
+//! `#2e2c26` (dark), with per-league accents, zone-highlight colors, and
+//! form-indicator colors extracted from the mockup's OKLCH formulas
+//! (`oklch(62% 0.17 <hue>)` per league; `oklch(93%|28% <chroma> <hue>)` for
+//! zone highlights). GPUI has no OKLCH constructor, so these are pre-computed
+//! HSLA approximations rather than a runtime OKLCH conversion — see
+//! `openspec/changes/ui-skeleton/design.md`.
 
-use gpui::{Hsla, SharedString, px};
+use gpui::{Hsla, Pixels, SharedString, hsla, px};
+use rust_i18n::t;
 
 const DEFAULT_BODY_FONT: &str = "Manrope";
+const DEFAULT_HEADING_FONT: &str = "Sora";
 const DEFAULT_UI_TEXT_SIZE: f32 = 14.0;
 
 /// Semantic color tokens for one FullTime theme.
@@ -71,26 +77,77 @@ impl ThemeKey {
 }
 
 /// Font-family and size selections for a [`FullTimeTheme`].
+///
+/// Style A only (per `openspec/changes/ui-skeleton/proposal.md`): heading
+/// font `Sora`, body font `Manrope`. There is no Style B variant or runtime
+/// style toggle.
 #[derive(Debug, Clone)]
 pub struct FontSelections {
+    pub heading_font: SharedString,
     pub body_font:    SharedString,
-    pub ui_text_size: gpui::Pixels,
+    pub ui_text_size: Pixels,
 }
 
 impl Default for FontSelections {
     fn default() -> Self {
-        Self { body_font:    SharedString::from(DEFAULT_BODY_FONT),
+        Self { heading_font: SharedString::from(DEFAULT_HEADING_FONT),
+               body_font:    SharedString::from(DEFAULT_BODY_FONT),
                ui_text_size: px(DEFAULT_UI_TEXT_SIZE), }
     }
 }
 
-/// GPUI app-level global containing the active FullTime theme and font
-/// selections.
+/// Style A type scale, matching the mockup's named text sizes.
+#[derive(Debug, Clone)]
+pub struct TypeScale {
+    /// Header brand wordmark.
+    pub brand:         Pixels,
+    /// Hero band title (Standings/History hero).
+    pub hero_title:    Pixels,
+    /// Section/card title.
+    pub section_title: Pixels,
+    /// Match score display.
+    pub score:         Pixels,
+    /// Default body text.
+    pub body:          Pixels,
+}
+
+impl Default for TypeScale {
+    fn default() -> Self {
+        Self { brand:         px(19.0),
+               hero_title:    px(34.0),
+               section_title: px(14.5),
+               score:         px(44.0),
+               body:          px(13.0), }
+    }
+}
+
+/// Style A radius tokens (base `16px`, matching the mockup's rounded/pill
+/// variant), with derived smaller/larger variants for compact controls and
+/// large cards.
+#[derive(Debug, Clone)]
+pub struct RadiusTokens {
+    pub sm:   Pixels,
+    pub base: Pixels,
+    pub lg:   Pixels,
+}
+
+impl Default for RadiusTokens {
+    fn default() -> Self {
+        Self { sm:   px(8.0),
+               base: px(16.0),
+               lg:   px(24.0), }
+    }
+}
+
+/// GPUI app-level global containing the active FullTime theme, font
+/// selections, type scale, and radius tokens.
 #[derive(Debug, Clone)]
 pub struct FullTimeTheme {
-    pub key:    ThemeKey,
-    pub colors: ColorTokens,
-    pub fonts:  FontSelections,
+    pub key:        ThemeKey,
+    pub colors:     ColorTokens,
+    pub fonts:      FontSelections,
+    pub type_scale: TypeScale,
+    pub radius:     RadiusTokens,
 }
 
 impl gpui::Global for FullTimeTheme {}
@@ -102,13 +159,97 @@ impl FullTimeTheme {
             ThemeKey::Pitch => pitch_colors(),
             ThemeKey::PitchNight => pitch_night_colors(),
         };
-        Self { key, colors, fonts }
+        Self { key,
+               colors,
+               fonts,
+               type_scale: TypeScale::default(),
+               radius: RadiusTokens::default() }
     }
 
     /// Returns the default theme (Pitch, default fonts).
     pub fn default_theme() -> Self {
         Self::new(ThemeKey::Pitch, FontSelections::default())
     }
+}
+
+/// The five leagues shown in the header's league tab bar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum League {
+    Epl,
+    LaLiga,
+    SerieA,
+    Bundesliga,
+    LigueUn,
+}
+
+impl League {
+    pub const ALL: [League; 5] = [League::Epl,
+                                  League::LaLiga,
+                                  League::SerieA,
+                                  League::Bundesliga,
+                                  League::LigueUn];
+
+    /// Display label matching the mockup's league tab text.
+    pub fn label(self) -> String {
+        let key = match self {
+            League::Epl => "league.epl",
+            League::LaLiga => "league.la_liga",
+            League::SerieA => "league.serie_a",
+            League::Bundesliga => "league.bundesliga",
+            League::LigueUn => "league.ligue_1",
+        };
+        t!(key).to_string()
+    }
+}
+
+/// Per-league accent color, matching the mockup's `oklch(62% 0.17 <hue>)`
+/// formula (EPL 150, LaLiga 25, Serie A 220, Bundesliga 5, Ligue 1 290),
+/// independent of the active light/dark theme.
+pub fn league_accent(league: League) -> Hsla {
+    match league {
+        League::Epl => hsla(150.0 / 360.0, 0.55, 0.42, 1.0),
+        League::LaLiga => hsla(25.0 / 360.0, 0.75, 0.50, 1.0),
+        League::SerieA => hsla(220.0 / 360.0, 0.55, 0.50, 1.0),
+        League::Bundesliga => hsla(5.0 / 360.0, 0.75, 0.45, 1.0),
+        League::LigueUn => hsla(290.0 / 360.0, 0.45, 0.50, 1.0),
+    }
+}
+
+/// Standings qualification-zone highlight colors, matching the mockup's
+/// zone hues (UCL 150, UEL 60, relegation 25) at light-mode (93% lightness)
+/// or dark-mode (28% lightness) backgrounds.
+#[derive(Debug, Clone)]
+pub struct ZoneColors {
+    pub ucl:        Hsla,
+    pub uel:        Hsla,
+    pub relegation: Hsla,
+}
+
+/// Resolves zone-highlight colors for `key` (light or dark).
+pub fn zone_colors(key: ThemeKey) -> ZoneColors {
+    let l = match key {
+        ThemeKey::Pitch => 0.93,
+        ThemeKey::PitchNight => 0.28,
+    };
+    ZoneColors { ucl:        hsla(150.0 / 360.0, 0.45, l, 1.0),
+                 uel:        hsla(60.0 / 360.0, 0.45, l, 1.0),
+                 relegation: hsla(25.0 / 360.0, 0.45, l, 1.0), }
+}
+
+/// Form-indicator (win/draw/loss) colors, matching the mockup's form-dot
+/// palette. Stable across light/dark themes.
+#[derive(Debug, Clone)]
+pub struct FormColors {
+    pub win:  Hsla,
+    pub draw: Hsla,
+    pub loss: Hsla,
+}
+
+/// Returns the win/draw/loss form-indicator colors.
+pub fn form_colors() -> FormColors {
+    FormColors { win:  hsla(150.0 / 360.0, 0.45, 0.42, 1.0),
+                 draw: hsla(0.0, 0.0, 0.60, 1.0),
+                 loss: hsla(25.0 / 360.0, 0.65, 0.50, 1.0), }
 }
 
 /// Overrides `gpui_component::Theme`'s semantic colors to match `colors`.

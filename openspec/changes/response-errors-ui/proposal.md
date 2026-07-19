@@ -30,3 +30,11 @@ When data-layer fetches fail, the current plan only shows local inline error tex
 - `crates/fulltime-ui/src/ui/views/response_errors_panel.rs` (new): a disclosable panel/drawer listing recorded errors with a detail pane.
 - Optional retry hooks for table, matches, teams, team detail, and match detail data loads.
 - No IPC boundary to cross — errors are recorded directly from the async fetch functions with enough context (operation name, view, sanitized payload) for users to identify the failing operation.
+
+## Follow-up: superseded by `ui-skeleton`
+
+The `ui-skeleton` change (implemented) removed `crates/fulltime-ui/src/ui/views/sidebar.rs` and
+`toolbar.rs`, replacing them with a single persistent header (`header.rs`) and per-screen content
+views. This proposal's references to `sidebar.rs`/`toolbar.rs` above are stale and need revision
+against the new header-based shell (`AppScreen` enum, `header.rs`, `views/components/`) before
+implementation starts.

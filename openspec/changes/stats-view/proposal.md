@@ -32,3 +32,11 @@ The app currently surfaces raw standings and match results but offers no synthes
 - `crates/fulltime-ui/src/data/nav.rs`: Add `Stats` variant to `NavScreen` (see `bundesliga-sports-ui`).
 - `crates/fulltime-ui/src/ui/views/sidebar.rs`: Add Stats nav item and active-state mapping.
 - `crates/fulltime-ui/src/ui/views/root_view.rs`: Wire the Stats view into the screen router; handle `Stats` in startup restore.
+
+## Follow-up: superseded by `ui-skeleton`
+
+The `ui-skeleton` change (implemented) removed `crates/fulltime-ui/src/ui/views/sidebar.rs` and
+`toolbar.rs`, replacing them with a single persistent header (`header.rs`) and per-screen content
+views. This proposal's references to `sidebar.rs`/`toolbar.rs` above are stale and need revision
+against the new header-based shell (`AppScreen` enum, `header.rs`, `views/components/`) before
+implementation starts.

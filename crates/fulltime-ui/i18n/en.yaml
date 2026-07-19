@@ -1,4 +1,4 @@
-_version: 2
+_version: 1
 sidebar:
   app_name: FullTime
 menu:
@@ -14,4 +14,20 @@ menu:
   window_zoom: Zoom
   help_title: Help
 status_bar:
-  placeholder: No leagues loaded yet
+  disclaimer: Prototype data is illustrative, not live sports data.
+screen:
+  standings: Standings
+  match: Match
+  history: History
+  player: Player
+  team: Team
+league:
+  epl: EPL
+  la_liga: LaLiga
+  serie_a: Serie A
+  bundesliga: Bundesliga
+  ligue_1: Ligue 1
+match_tab:
+  summary: Summary
+  lineups: Lineups
+  stats: Stats

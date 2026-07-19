@@ -1,10 +1,11 @@
 //! FullTime desktop application UI: the reusable GPUI application shell.
 //!
 //! This crate holds everything platform-agnostic — window/menu bootstrap,
-//! theming, i18n, and the shell views (title bar, sidebar, status bar,
-//! toolbar, root view). League/match/team data and the screens that render
-//! it land in later crates/modules once the OpenLigaDB/TheSportsDB port
-//! happens; this scaffold only opens a themed, empty window.
+//! theming, i18n, and the shell views (persistent header, status bar,
+//! and the five app-screen views). League/match/team data lands in later
+//! crates/modules once the OpenLigaDB/TheSportsDB port happens; the
+//! screens here render the Claude Design mockup's empty-state layouts,
+//! with no live data wired in yet.
 
 // Embed all YAML locale files from `crates/fulltime-ui/i18n/` at compile
 // time. The `t!("module.key")` macro resolves to `crate::_rust_i18n_t(...)`,
@@ -17,13 +18,28 @@ pub mod i18n;
 pub mod ui {
     pub mod actions;
     pub mod app;
+    pub mod app_state;
     pub mod widgets;
     pub mod views {
+        pub mod components {
+            pub mod back_button;
+            pub mod badge;
+            pub mod card;
+            pub mod form_dots;
+            pub mod hero;
+            pub mod legend;
+            pub mod stat_grid;
+            pub mod status_pill;
+            pub mod tab_bar;
+        }
+        pub mod header;
+        pub mod history;
+        pub mod match_view;
+        pub mod player;
         pub mod root_view;
-        pub mod sidebar;
+        pub mod standings;
         pub mod status_bar;
-        pub mod title_bar;
-        pub mod toolbar;
+        pub mod team;
     }
 }
 pub mod util;

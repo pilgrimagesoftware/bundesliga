@@ -29,3 +29,11 @@ The current season picker is a basic select control, which becomes tedious as so
 - `crates/fulltime-ui/src/ui/views/season_picker.rs` (new): Picker trigger, popover, search, filter, and sort UI, built on `gpui-component`'s popover/list primitives.
 - `crates/fulltime-ui/src/data/seasons.rs`: `available_seasons()` (see `bundesliga-sports-ui`) stays the data source; no data-layer changes are required unless season metadata grows beyond plain year values.
 - Visual behavior in the toolbar and any future season selection surfaces.
+
+## Follow-up: superseded by `ui-skeleton`
+
+The `ui-skeleton` change (implemented) removed `crates/fulltime-ui/src/ui/views/sidebar.rs` and
+`toolbar.rs`, replacing them with a single persistent header (`header.rs`) and per-screen content
+views. This proposal's references to `sidebar.rs`/`toolbar.rs` above are stale and need revision
+against the new header-based shell (`AppScreen` enum, `header.rs`, `views/components/`) before
+implementation starts.
