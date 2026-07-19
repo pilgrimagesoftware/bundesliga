@@ -1,39 +1,40 @@
-# Bundesliga
+# FullTime
 
-A Tauri v2 desktop app for displaying Bundesliga football league tables and scores.
+A native desktop app for Bundesliga football league tables and scores, built with [GPUI](https://github.com/zed-industries/zed) (the UI framework behind Zed).
 
 ## Stack
 
-- **Frontend**: SvelteKit + Svelte 5 + TypeScript (Static Site Generation, served by Tauri)
-- **Backend**: Rust via Tauri v2
-- **Data**: [OpenLigaDB](https://www.openligadb.de/) REST API via the `openligadb` Rust crate
+- **UI**: [GPUI](https://github.com/zed-industries/zed) + [gpui-component](https://github.com/longbridge/gpui-component), in `crates/fulltime-ui`
+- **App shell**: `crates/fulltime-core` — window/menu bootstrap, logging, the `FullTime` binary
+- **Data**: [OpenLigaDB](https://www.openligadb.de/) REST API (planned; not yet wired into the UI)
+- **i18n**: `rust-i18n`, locale catalogs under `crates/fulltime-ui/i18n/`
 
 ## Development
 
-**Prerequisites**: Node 22.9.0, Rust 1.82, pnpm
+**Prerequisites**: Rust 1.95 (see `rust-toolchain.toml`)
 
 ```bash
-# Full dev mode (Vite + Tauri)
-cargo tauri dev
+# Run the app
+cargo run -p fulltime-core
 
-# Frontend only
-pnpm dev
+# Build the workspace
+cargo build
 
-# Type checking
-pnpm check
-pnpm check:watch
-
-# Production build
-cargo tauri build
+# Lint and format
+cargo clippy --all-targets
+cargo +nightly fmt
 ```
-
-Rust: `cargo test`, `cargo clippy`, `cargo fmt` — run from `src-tauri/`.
 
 ## Architecture
 
-The frontend calls Rust via Tauri's `invoke()` API. On load, it fetches the league list, then seasons, then standings. The table auto-refreshes every 30 seconds.
+`fulltime-ui` is the reusable GPUI application crate: theming (`data/theme.rs`), the header
+nav (brand, league tabs, screen nav, light/dark toggle), and the five app screens (Standings,
+Match, History, Player, Team) under `ui/views/`, built from shared shell components in
+`ui/views/components/`. `fulltime-core` is a thin binary crate that boots the GPUI app and
+opens the main window; its `[[bin]]` target is named `FullTime`.
 
-**Tauri commands**: `get_leagues()`, `get_seasons()`, `get_table()`
+The UI currently renders the Claude Design mockup's layout as an empty-state skeleton —
+league/match/team data and the OpenLigaDB integration land in a later change.
 
-**Frontend entry**: `src/routes/+page.svelte`
-**Backend entry**: `src-tauri/src/lib.rs`
+**Binary entry**: `crates/fulltime-core/src/main.rs`
+**UI root view**: `crates/fulltime-ui/src/ui/views/root_view.rs`
