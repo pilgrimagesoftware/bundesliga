@@ -1,0 +1,4 @@
+[submodule "plugins/bundesliga"]
+	path = plugins/bundesliga
+	url = git@github.com:pilgrimagesoftware/FullTime-Plugin-Bundesliga.git
+	branch = develop

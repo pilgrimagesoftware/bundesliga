@@ -15,18 +15,24 @@ menu:
   help_title: Help
 status_bar:
   disclaimer: Prototype data is illustrative, not live sports data.
+  plugins_tooltip: Plugins
 screen:
   standings: Standings
   match: Match
   history: History
   player: Player
   team: Team
-league:
-  epl: EPL
-  la_liga: LaLiga
-  serie_a: Serie A
-  bundesliga: Bundesliga
-  ligue_1: Ligue 1
+  plugins: Plugins
+plugins:
+  unavailable: Plugin host is not available in this build.
+  none_installed: No plugins installed.
+  close_tooltip: Close
+league_selector:
+  unavailable: Plugin host is not available in this build.
+  none_loaded: No leagues loaded - enable a plugin to see standings.
+  select_league: Select league
+  select_competition: Select competition
+  search: Search...
 match_tab:
   summary: Summary
   lineups: Lineups

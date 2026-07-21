@@ -1,15 +1,13 @@
 //! FullTime theme system: a light and a dark variant, matching the Style A
 //! palette, typography, and radius tokens of the Claude Design mockup
 //! ("Football Scores and tracking app") — canvas colors `#f0eee6` (light) /
-//! `#2e2c26` (dark), with per-league accents, zone-highlight colors, and
-//! form-indicator colors extracted from the mockup's OKLCH formulas
-//! (`oklch(62% 0.17 <hue>)` per league; `oklch(93%|28% <chroma> <hue>)` for
-//! zone highlights). GPUI has no OKLCH constructor, so these are pre-computed
-//! HSLA approximations rather than a runtime OKLCH conversion — see
-//! `openspec/changes/ui-skeleton/design.md`.
+//! `#2e2c26` (dark), with zone-highlight colors and form-indicator colors
+//! extracted from the mockup's OKLCH formulas (`oklch(93%|28% <chroma>
+//! <hue>)` for zone highlights). GPUI has no OKLCH constructor, so these are
+//! pre-computed HSLA approximations rather than a runtime OKLCH conversion —
+//! see `openspec/changes/ui-skeleton/design.md`.
 
 use gpui::{Hsla, Pixels, SharedString, hsla, px};
-use rust_i18n::t;
 
 const DEFAULT_BODY_FONT: &str = "Manrope";
 const DEFAULT_HEADING_FONT: &str = "Sora";
@@ -169,49 +167,6 @@ impl FullTimeTheme {
     /// Returns the default theme (Pitch, default fonts).
     pub fn default_theme() -> Self {
         Self::new(ThemeKey::Pitch, FontSelections::default())
-    }
-}
-
-/// The five leagues shown in the header's league tab bar.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum League {
-    Epl,
-    LaLiga,
-    SerieA,
-    Bundesliga,
-    LigueUn,
-}
-
-impl League {
-    pub const ALL: [League; 5] = [League::Epl,
-                                  League::LaLiga,
-                                  League::SerieA,
-                                  League::Bundesliga,
-                                  League::LigueUn];
-
-    /// Display label matching the mockup's league tab text.
-    pub fn label(self) -> String {
-        let key = match self {
-            League::Epl => "league.epl",
-            League::LaLiga => "league.la_liga",
-            League::SerieA => "league.serie_a",
-            League::Bundesliga => "league.bundesliga",
-            League::LigueUn => "league.ligue_1",
-        };
-        t!(key).to_string()
-    }
-}
-
-/// Per-league accent color, matching the mockup's `oklch(62% 0.17 <hue>)`
-/// formula (EPL 150, LaLiga 25, Serie A 220, Bundesliga 5, Ligue 1 290),
-/// independent of the active light/dark theme.
-pub fn league_accent(league: League) -> Hsla {
-    match league {
-        League::Epl => hsla(150.0 / 360.0, 0.55, 0.42, 1.0),
-        League::LaLiga => hsla(25.0 / 360.0, 0.75, 0.50, 1.0),
-        League::SerieA => hsla(220.0 / 360.0, 0.55, 0.50, 1.0),
-        League::Bundesliga => hsla(5.0 / 360.0, 0.75, 0.45, 1.0),
-        League::LigueUn => hsla(290.0 / 360.0, 0.45, 0.50, 1.0),
     }
 }
 

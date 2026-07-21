@@ -1,0 +1,17 @@
+[package]
+name = "fulltime-plugin-fixture"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Minimal fixture plugin used to validate fulltime-core's plugin host runtime end-to-end, not a real data provider"
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+fulltime-plugin-api = "0.2.0"

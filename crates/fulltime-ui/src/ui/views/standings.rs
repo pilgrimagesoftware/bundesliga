@@ -1,13 +1,19 @@
 //! Standings screen: hero band + two-column body (standings table, matchday
-//! rail shell, top-scorers shell). Empty-state only — no live league/match
-//! data exists yet. The results grid is a CSS-grid-based table (structured
-//! rows/columns, not one-off flexbox rows) rather than a virtualized
-//! `DataTable`, which proved unreliable for this small, static row set.
+//! rail shell, top-scorers shell). The standings table renders whichever
+//! league/competition is selected in the header's league selector (see
+//! `RootView`/`ui::views::components::league_selector`), falling back to
+//! its mockup rows if nothing is selected or the fetch failed — the
+//! matchday rail/top-scorers panels remain mockup-only regardless; no data
+//! source exists for those yet. The results grid is a CSS-grid-based table
+//! (structured rows/columns, not one-off flexbox rows) rather than a
+//! virtualized `DataTable`, which proved unreliable for this small, static
+//! row set.
 
 use gpui::prelude::*;
 use gpui::{App, Hsla, div, px};
 
-use crate::data::theme::{ColorTokens, League, ZoneColors, league_accent, zone_colors};
+use crate::data::theme::{ColorTokens, ZoneColors, zone_colors};
+use crate::ui::plugin_manager::{StandingsRowSnapshot, StandingsSnapshot};
 use crate::ui::views::components::badge::render_badge;
 use crate::ui::views::components::card::render_card;
 use crate::ui::views::components::form_dots::{FormResult, render_form_dots};
@@ -15,94 +21,127 @@ use crate::ui::views::components::hero::render_hero;
 use crate::ui::views::components::legend::render_legend_item;
 use crate::ui::views::components::status_pill::{MatchStatus, render_status_pill};
 
-struct PlaceholderRow {
-    rank: u8,
-    club: &'static str,
-    p:    u8,
-    w:    u8,
-    d:    u8,
-    l:    u8,
-    gf:   u8,
-    ga:   u8,
-    pts:  u8,
-    form: [FormResult; 5],
+/// One rendered standings row, from either the mockup table or a real
+/// [`StandingsRowSnapshot`]. `form` is `None` for real rows: the canonical
+/// schema has no "recent form" concept, so there is nothing to show in the
+/// Form column for real data.
+struct DisplayRow {
+    rank: u16,
+    club: String,
+    p:    u16,
+    w:    u16,
+    d:    u16,
+    l:    u16,
+    gf:   u16,
+    ga:   u16,
+    pts:  u16,
+    form: Option<[FormResult; 5]>,
 }
 
-fn placeholder_table() -> Vec<PlaceholderRow> {
+impl From<StandingsRowSnapshot> for DisplayRow {
+    fn from(row: StandingsRowSnapshot) -> Self {
+        Self { rank: row.rank,
+               club: row.team_name,
+               p:    row.played,
+               w:    row.won,
+               d:    row.drawn,
+               l:    row.lost,
+               gf:   row.goals_for,
+               ga:   row.goals_against,
+               pts:  row.points,
+               form: None, }
+    }
+}
+
+fn placeholder_table() -> Vec<DisplayRow> {
     use FormResult::{Draw, Loss, Win};
-    vec![PlaceholderRow { rank: 1,
-                          club: "FC Placeholder",
-                          p:    12,
-                          w:    9,
-                          d:    2,
-                          l:    1,
-                          gf:   28,
-                          ga:   10,
-                          pts:  29,
-                          form: [Win, Win, Draw, Win, Win], },
-         PlaceholderRow { rank: 2,
-                          club: "Athletic Sample",
-                          p:    12,
-                          w:    8,
-                          d:    3,
-                          l:    1,
-                          gf:   24,
-                          ga:   12,
-                          pts:  27,
-                          form: [Win, Draw, Win, Win, Loss], },
-         PlaceholderRow { rank: 3,
-                          club: "Union Mockup",
-                          p:    12,
-                          w:    7,
-                          d:    2,
-                          l:    3,
-                          gf:   20,
-                          ga:   15,
-                          pts:  23,
-                          form: [Loss, Win, Win, Draw, Win], },
-         PlaceholderRow { rank: 4,
-                          club: "SC Fixture",
-                          p:    12,
-                          w:    5,
-                          d:    4,
-                          l:    3,
-                          gf:   18,
-                          ga:   16,
-                          pts:  19,
-                          form: [Draw, Draw, Win, Loss, Win], },
-         PlaceholderRow { rank: 5,
-                          club: "VfL Dataless",
-                          p:    12,
-                          w:    2,
-                          d:    3,
-                          l:    7,
-                          gf:   11,
-                          ga:   24,
-                          pts:  9,
-                          form: [Loss, Loss, Draw, Loss, Win], },]
+    vec![DisplayRow { rank: 1,
+                      club: "FC Placeholder".to_owned(),
+                      p:    12,
+                      w:    9,
+                      d:    2,
+                      l:    1,
+                      gf:   28,
+                      ga:   10,
+                      pts:  29,
+                      form: Some([Win, Win, Draw, Win, Win]), },
+         DisplayRow { rank: 2,
+                      club: "Athletic Sample".to_owned(),
+                      p:    12,
+                      w:    8,
+                      d:    3,
+                      l:    1,
+                      gf:   24,
+                      ga:   12,
+                      pts:  27,
+                      form: Some([Win, Draw, Win, Win, Loss]), },
+         DisplayRow { rank: 3,
+                      club: "Union Mockup".to_owned(),
+                      p:    12,
+                      w:    7,
+                      d:    2,
+                      l:    3,
+                      gf:   20,
+                      ga:   15,
+                      pts:  23,
+                      form: Some([Loss, Win, Win, Draw, Win]), },
+         DisplayRow { rank: 4,
+                      club: "SC Fixture".to_owned(),
+                      p:    12,
+                      w:    5,
+                      d:    4,
+                      l:    3,
+                      gf:   18,
+                      ga:   16,
+                      pts:  19,
+                      form: Some([Draw, Draw, Win, Loss, Win]), },
+         DisplayRow { rank: 5,
+                      club: "VfL Dataless".to_owned(),
+                      p:    12,
+                      w:    2,
+                      d:    3,
+                      l:    7,
+                      gf:   11,
+                      ga:   24,
+                      pts:  9,
+                      form: Some([Loss, Loss, Draw, Loss, Win]), },]
 }
 
 const STANDINGS_HEADERS: &[&str] =
     &["#", "Club", "P", "W", "D", "L", "GF", "GA", "GD", "Pts", "Form"];
 
 /// Renders the Standings screen: no interactivity in this skeleton (the
-/// matchday stepper/season pill are static placeholders).
-pub fn render_standings_screen(colors: &ColorTokens, active_league: League, cx: &App)
+/// matchday stepper/season pill are static placeholders). Renders `standings`
+/// (the header selector's current fetch, if any) in place of the mockup
+/// table when present.
+pub fn render_standings_screen(colors: &ColorTokens, standings: Option<StandingsSnapshot>,
+                               cx: &App)
                                -> impl IntoElement {
-    let accent = league_accent(active_league);
+    let accent = colors.accent;
     let zones = zone_colors(cx.global::<crate::data::theme::FullTimeTheme>().key);
+
+    let (eyebrow, season_label, rows): (String, String, Vec<DisplayRow>) = match standings {
+        // The competition name (e.g. "1. Fußball-Bundesliga 2026/2027") already
+        // includes the season, so there's nothing distinct left to show in the
+        // season-label pill for real data.
+        Some(standings) => (standings.competition_name,
+                            String::new(),
+                            standings.rows.into_iter().map(DisplayRow::from).collect()),
+        None => ("No league selected".to_owned(), "2025/26".to_owned(), placeholder_table()),
+    };
+    let club_count = rows.len();
 
     div().flex()
          .flex_col()
          .gap(px(20.0))
-         .child(render_hero(active_league.label(),
+         .child(render_hero(eyebrow,
                             "Standings",
                             div().flex()
                                  .items_center()
                                  .gap(px(12.0))
                                  .child(div().text_size(px(12.0))
                                              .text_color(colors.text_tertiary)
-                                             .child("2025/26"))
+                                             .child(season_label))
                                  .child(div().px(px(10.0))
                                              .py(px(4.0))
                                              .rounded_full()
@@ -110,11 +149,11 @@ pub fn render_standings_screen(colors: &ColorTokens, active_league: League, cx: 
                                              .border_1()
                                              .border_color(colors.border)
                                              .text_size(px(12.0))
-                                             .child("18 clubs")),
+                                             .child(format!("{club_count} clubs"))),
                             cx))
          .child(div().flex()
                      .gap(px(20.0))
-                     .child(render_standings_table_panel(colors, accent, &zones, cx))
+                     .child(render_standings_table_panel(colors, accent, &zones, rows, cx))
                      .child(div().flex()
                                  .flex_col()
                                  .gap(px(20.0))
@@ -124,13 +163,14 @@ pub fn render_standings_screen(colors: &ColorTokens, active_league: League, cx: 
                                  .child(render_top_scorers(colors, cx))))
 }
 
-fn render_standings_table_panel(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors, cx: &App)
+fn render_standings_table_panel(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors,
+                                rows: Vec<DisplayRow>, cx: &App)
                                 -> impl IntoElement {
     div().flex_1()
          .flex()
          .flex_col()
          .gap(px(12.0))
-         .child(render_standings_grid(colors, accent, zones, cx))
+         .child(render_standings_grid(colors, accent, zones, rows, cx))
          .child(div().flex()
                      .gap(px(16.0))
                      .child(render_legend_item(zones.ucl, "Champions League", cx))
@@ -138,7 +178,8 @@ fn render_standings_table_panel(colors: &ColorTokens, accent: Hsla, zones: &Zone
                      .child(render_legend_item(zones.relegation, "Relegation", cx)))
 }
 
-fn render_standings_grid(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors, cx: &App)
+fn render_standings_grid(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors,
+                         rows: Vec<DisplayRow>, cx: &App)
                          -> impl IntoElement {
     let header_cells = STANDINGS_HEADERS.iter().map(|label| {
                                                    div().px(px(8.0))
@@ -150,8 +191,8 @@ fn render_standings_grid(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors,
                                                         .into_any_element()
                                                });
 
-    let mut body_cells = Vec::with_capacity(placeholder_table().len() * STANDINGS_HEADERS.len());
-    for row in placeholder_table() {
+    let mut body_cells = Vec::with_capacity(rows.len() * STANDINGS_HEADERS.len());
+    for row in rows {
         let zone_bg = match row.rank {
             1..=4 => Some(zones.ucl),
             5 => Some(zones.uel),
@@ -159,7 +200,7 @@ fn render_standings_grid(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors,
             _ => None,
         };
         let bg = zone_bg.unwrap_or(colors.surface);
-        let gd = format!("{:+}", row.gf as i16 - row.ga as i16);
+        let gd = format!("{:+}", row.gf as i32 - row.ga as i32);
 
         body_cells.push(grid_cell(bg, colors.text_primary, row.rank.to_string()));
         body_cells.push(div().flex()
@@ -187,7 +228,9 @@ fn render_standings_grid(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors,
         body_cells.push(div().px(px(8.0))
                              .py(px(6.0))
                              .bg(bg)
-                             .child(render_form_dots(&row.form))
+                             .child(render_form_dots(row.form
+                                                        .as_ref()
+                                                        .map_or(&[][..], |form| form)))
                              .into_any_element());
     }
 

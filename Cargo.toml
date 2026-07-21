@@ -3,7 +3,15 @@ default-members = ["crates/fulltime-core", "crates/fulltime-ui"]
 members = [
     "crates/fulltime-core",
     "crates/fulltime-ui",
+    # Not a default member: only built explicitly, for wasm32-wasip2, by
+    # fulltime-core's plugin host tests (see openspec/changes/plugin-host-runtime).
+    "crates/fulltime-plugin-fixture",
 ]
+# The Bundesliga reference plugin is a separate, independently-versioned
+# crate (its own Cargo.lock/toolchain) vendored here as a git submodule only
+# so its source is available to build to wasm32-wasip2 (see
+# scripts/vendor-bundesliga-plugin.sh) - not a member of this workspace.
+exclude = ["plugins/bundesliga"]
 resolver = "2"
 
 [workspace.package]

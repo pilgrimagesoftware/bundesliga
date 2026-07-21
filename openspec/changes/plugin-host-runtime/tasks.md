@@ -1,47 +1,64 @@
 ## 1. Runtime Setup
 
-- [ ] 1.1 Add `wasmtime` (Component Model) to `fulltime-core` behind a feature flag
-- [ ] 1.2 Add a dependency on `fulltime-plugin-api` for the manifest format, canonical
+- [x] 1.1 Add `wasmtime` (Component Model) to `fulltime-core` behind a feature flag
+- [x] 1.2 Add a dependency on `fulltime-plugin-api` for the manifest format, canonical
   schema types, and WIT interface
 
 ## 2. Plugin Host Runtime
 
-- [ ] 2.1 Implement plugin loading/instantiation from the manifest, rejecting incompatible
+- [x] 2.1 Implement plugin loading/instantiation from the manifest, rejecting incompatible
   schema/interface versions
-- [ ] 2.2 Implement the host-provided HTTP fetch capability, scoped to hosts declared in
+- [x] 2.2 Implement the host-provided HTTP fetch capability, scoped to hosts declared in
   the plugin's manifest
-- [ ] 2.3 Implement fault isolation so a plugin panic/trap does not crash the host or
+- [x] 2.3 Implement fault isolation so a plugin panic/trap does not crash the host or
   affect other plugins
-- [ ] 2.4 Implement plugin unloading and re-loading without an app restart
-- [ ] 2.5 Validate the runtime against a minimal fixture/test plugin (not the real
+- [x] 2.4 Implement plugin unloading and re-loading without an app restart
+- [x] 2.5 Validate the runtime against a minimal fixture/test plugin (not the real
   Bundesliga plugin) before wiring in a real one
 
 ## 3. Plugin Manifest Registry
 
-- [ ] 3.1 Implement discovery of bundled first-party plugins at startup
-- [ ] 3.2 Implement discovery of user-installed plugins from a user plugin directory
-- [ ] 3.3 Validate discovered manifests via `fulltime-plugin-api`, skipping and logging
+- [x] 3.1 Implement discovery of bundled first-party plugins at startup
+- [x] 3.2 Implement discovery of user-installed plugins from a user plugin directory
+- [x] 3.3 Validate discovered manifests via `fulltime-plugin-api`, skipping and logging
   invalid ones rather than failing startup
-- [ ] 3.4 Implement enable/disable state per plugin, persisted across restarts, separate
+- [x] 3.4 Implement enable/disable state per plugin, persisted across restarts, separate
   from the plugin's own manifest file
-- [ ] 3.5 Implement installed-version tracking and update-availability detection for
-  plugins with a declared update source
+- [ ] 3.5 BLOCKED: `fulltime-plugin-api`'s `Manifest` (0.1.1) has no field for a plugin to
+  declare an update source at all (`id`, `version`, `schema_version`, `interface_version`,
+  `network_hosts` only) — this task can't be implemented against the current manifest
+  format. Needs a `fulltime-plugin-api` change (new optional manifest field, e.g.
+  `update_source`) before this is possible; out of scope for this repo alone.
 
 ## 4. Plugin Management UI
 
-- [ ] 4.1 Add a `fulltime-ui` screen listing installed plugins (name, version,
+- [x] 4.1 Add a `fulltime-ui` screen listing installed plugins (name, version,
   enabled/disabled)
-- [ ] 4.2 Add enable/disable controls that take effect immediately
-- [ ] 4.3 Add an update-availability indicator per plugin
+- [x] 4.2 Add enable/disable controls that take effect immediately
+- [ ] 4.3 BLOCKED: same root cause as 3.5 - there is no update-source/update-availability
+  data anywhere to indicate. Depends on 3.5's `fulltime-plugin-api` manifest change first.
 
 ## 5. App Cutover
 
-- [ ] 5.1 Switch the app's UI/business logic to consume `fulltime-plugin-api`'s canonical
-  schema instead of any provider-specific type
-- [ ] 5.2 Coordinate with the `Plugins/Bundesliga` reference-plugin change to cut the app
-  over to loading Bundesliga data through the plugin path once that plugin is ready
+- [x] 5.1 Switch the app's UI/business logic to consume `fulltime-plugin-api`'s canonical
+  schema instead of any provider-specific type. Scoped to the Standings screen only for
+  this pass (user decision): there was no provider-specific type to migrate away from
+  (the app had zero SDK dependencies before this), so this and 5.2 became one piece of
+  work. Match/History/Team screens are a separate, similarly-scoped follow-up; the Player
+  screen can't be cut over at all — the canonical schema has no `Player` type.
+- [x] 5.2 Coordinate with the `Plugins/Bundesliga` reference-plugin change to cut the app
+  over to loading Bundesliga data through the plugin path once that plugin is ready.
+  Standings now fetches the Bundesliga plugin's current-season table once at startup
+  (`app::plugin_manager::fetch_bundesliga_standings`, picking the highest `bl1-<season>`
+  competition id) and renders it in place of the mockup table when available, falling
+  back to the mockup otherwise. Verified by running the real app: shows the actual live
+  2026/2027 Bundesliga table with real club names. Known minor issue: the grid's
+  uniform-width columns truncate some longer real club names (not present in gpui's
+  `grid_cols` API without a custom template) - not fixed in this pass.
 - [ ] 5.3 Remove the feature flag once the Bundesliga plugin path is validated in place of
-  any direct SDK dependency
+  any direct SDK dependency. Not yet: only the Standings screen is cut over, and the
+  feature flag still usefully gates the whole plugin-host runtime while Match/History/
+  Team remain mockup-only.
 
 ## 6. Verification
 
