@@ -1,6 +1,8 @@
 mod app;
 mod constants;
 mod logging;
+#[cfg(feature = "plugin-host")]
+mod plugin_host;
 
 fn main() {
     let log_guards = logging::init();

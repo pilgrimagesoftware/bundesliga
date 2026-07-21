@@ -1,19 +1,19 @@
 ## 1. Runtime Setup
 
-- [ ] 1.1 Add `wasmtime` (Component Model) to `fulltime-core` behind a feature flag
-- [ ] 1.2 Add a dependency on `fulltime-plugin-api` for the manifest format, canonical
+- [x] 1.1 Add `wasmtime` (Component Model) to `fulltime-core` behind a feature flag
+- [x] 1.2 Add a dependency on `fulltime-plugin-api` for the manifest format, canonical
   schema types, and WIT interface
 
 ## 2. Plugin Host Runtime
 
-- [ ] 2.1 Implement plugin loading/instantiation from the manifest, rejecting incompatible
+- [x] 2.1 Implement plugin loading/instantiation from the manifest, rejecting incompatible
   schema/interface versions
-- [ ] 2.2 Implement the host-provided HTTP fetch capability, scoped to hosts declared in
+- [x] 2.2 Implement the host-provided HTTP fetch capability, scoped to hosts declared in
   the plugin's manifest
-- [ ] 2.3 Implement fault isolation so a plugin panic/trap does not crash the host or
+- [x] 2.3 Implement fault isolation so a plugin panic/trap does not crash the host or
   affect other plugins
-- [ ] 2.4 Implement plugin unloading and re-loading without an app restart
-- [ ] 2.5 Validate the runtime against a minimal fixture/test plugin (not the real
+- [x] 2.4 Implement plugin unloading and re-loading without an app restart
+- [x] 2.5 Validate the runtime against a minimal fixture/test plugin (not the real
   Bundesliga plugin) before wiring in a real one
 
 ## 3. Plugin Manifest Registry

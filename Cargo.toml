@@ -3,6 +3,9 @@ default-members = ["crates/fulltime-core", "crates/fulltime-ui"]
 members = [
     "crates/fulltime-core",
     "crates/fulltime-ui",
+    # Not a default member: only built explicitly, for wasm32-wasip2, by
+    # fulltime-core's plugin host tests (see openspec/changes/plugin-host-runtime).
+    "crates/fulltime-plugin-fixture",
 ]
 resolver = "2"
 
