@@ -11,12 +11,18 @@
 use std::collections::HashSet;
 
 use gpui::prelude::*;
-use gpui::{Context, Render, Window, div, px};
+use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, px};
+use gpui_component::combobox::{ComboboxEvent, ComboboxState};
+use gpui_component::searchable_list::SearchableVec;
+use rust_i18n::t;
 
 use crate::data::theme::{FullTimeTheme, ThemeKey};
 use crate::ui::app_state::{AppScreen, MatchTab};
 use crate::ui::plugin_manager::{PluginManagerHandle, StandingsSnapshot};
-use crate::ui::views::components::league_selector::render_league_selector;
+use crate::ui::views::components::league_selector::{
+    CompetitionComboboxState, CompetitionItem, LeagueComboboxState, LeagueItem, competition_index,
+    league_index, render_league_selector,
+};
 use crate::ui::views::header::render_header;
 use crate::ui::views::history::render_history_screen;
 use crate::ui::views::match_view::render_match_screen;
@@ -28,43 +34,106 @@ use crate::ui::views::team::render_team_screen;
 
 /// Top-level GPUI view for the FullTime main window.
 pub struct RootView {
-    active_screen:           AppScreen,
-    active_match_tab:        MatchTab,
-    history_open_rows:       HashSet<usize>,
+    active_screen:                      AppScreen,
+    active_match_tab:                   MatchTab,
+    history_open_rows:                  HashSet<usize>,
     /// The screen to return to when the Plugins screen (a status-bar
     /// utility screen, not one of the header's primary nav tabs) is closed.
     /// Only updated when *entering* Plugins from elsewhere — see
     /// [`Self::toggle_plugins_screen`].
-    pre_plugins_screen:      AppScreen,
-    selected_plugin_id:      Option<String>,
-    selected_competition_id: Option<String>,
+    pre_plugins_screen:                 AppScreen,
+    selected_plugin_id:                 Option<String>,
+    selected_competition_id:            Option<String>,
     /// The selected league/competition's fetched standings, cached here so
     /// re-rendering doesn't re-fetch over the network every frame. `None`
     /// until a league is selected, or if the fetch failed.
-    current_standings:       Option<StandingsSnapshot>,
+    current_standings:                  Option<StandingsSnapshot>,
+    league_combobox:                    Entity<LeagueComboboxState>,
+    competition_combobox:               Entity<CompetitionComboboxState>,
+    /// Set once at construction if the plugin host is unavailable or no
+    /// leagues are loaded; `render_league_selector` shows this in place of
+    /// the comboboxes. Leagues are only enumerated at startup - see
+    /// `docs/openspec.md`'s scope note on live plugin enable/disable not yet
+    /// refreshing this list.
+    league_selector_fallback:           Option<SharedString>,
+    _league_combobox_subscription:      Subscription,
+    _competition_combobox_subscription: Subscription,
 }
 
 impl RootView {
-    pub fn new(_window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let mut view = Self { active_screen:           AppScreen::Standings,
-                              active_match_tab:        MatchTab::Summary,
-                              history_open_rows:       HashSet::new(),
-                              pre_plugins_screen:      AppScreen::Standings,
-                              selected_plugin_id:      None,
+    pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
+        let (league_items, league_selector_fallback) = if !cx.has_global::<PluginManagerHandle>() {
+            (Vec::new(), Some(SharedString::from(t!("league_selector.unavailable").to_string())))
+        }
+        else {
+            let leagues: Vec<LeagueItem> = cx.global::<PluginManagerHandle>()
+                                             .0
+                                             .available_leagues()
+                                             .into_iter()
+                                             .map(LeagueItem::from)
+                                             .collect();
+            if leagues.is_empty() {
+                (leagues, Some(SharedString::from(t!("league_selector.none_loaded").to_string())))
+            }
+            else {
+                (leagues, None)
+            }
+        };
+
+        let league_combobox = cx.new(|cx| {
+                                    ComboboxState::new(SearchableVec::new(league_items.clone()),
+                                                       Vec::new(),
+                                                       window,
+                                                       cx).searchable(true)
+                                });
+        let competition_combobox =
+            cx.new(|cx| {
+                  ComboboxState::new(SearchableVec::new(Vec::<CompetitionItem>::new()),
+                                     Vec::new(),
+                                     window,
+                                     cx).searchable(true)
+              });
+
+        let league_combobox_subscription =
+            cx.subscribe_in(&league_combobox,
+                            window,
+                            |view, _emitter, event, window, cx| {
+                                if let ComboboxEvent::Confirm(values) = event
+                                   && let Some(plugin_id) = values.first().cloned()
+                                {
+                                    view.select_league(plugin_id, window, cx);
+                                }
+                            });
+        let competition_combobox_subscription =
+            cx.subscribe_in(&competition_combobox,
+                            window,
+                            |view, _emitter, event, _window, cx| {
+                                if let ComboboxEvent::Confirm(values) = event
+                                   && let Some(competition_id) = values.first().cloned()
+                                {
+                                    view.select_competition(competition_id, cx);
+                                }
+                            });
+
+        let mut view = Self { active_screen: AppScreen::Standings,
+                              active_match_tab: MatchTab::Summary,
+                              history_open_rows: HashSet::new(),
+                              pre_plugins_screen: AppScreen::Standings,
+                              selected_plugin_id: None,
                               selected_competition_id: None,
-                              current_standings:       None, };
+                              current_standings: None,
+                              league_combobox,
+                              competition_combobox,
+                              league_selector_fallback,
+                              _league_combobox_subscription: league_combobox_subscription,
+                              _competition_combobox_subscription:
+                                  competition_combobox_subscription };
 
         // Auto-select the first available league/competition, if any, so
         // the Standings screen shows real data immediately rather than
         // requiring the user to open the selector first.
-        if let Some(league) = cx.try_global::<PluginManagerHandle>().and_then(|handle| {
-                                                                        handle.0
-                                                                              .available_leagues()
-                                                                              .into_iter()
-                                                                              .next()
-                                                                    })
-        {
-            view.select_league(league.plugin_id, cx);
+        if let Some(league) = league_items.into_iter().next() {
+            view.select_league(league.plugin_id, window, cx);
         }
 
         view
@@ -92,17 +161,44 @@ impl RootView {
 
     /// Selects `plugin_id` as the active league, auto-selecting its most
     /// recent competition, and fetches that competition's standings.
-    pub fn select_league(&mut self, plugin_id: String, cx: &mut Context<Self>) {
-        let competition_id = if cx.has_global::<PluginManagerHandle>() {
-                                 cx.global_mut::<PluginManagerHandle>()
-                                   .0
-                                   .competitions(&plugin_id)
-                                   .into_iter()
-                                   .next()
-                             }
-                             else {
-                                 None
-                             }.map(|competition| competition.id);
+    pub fn select_league(&mut self, plugin_id: String, window: &mut Window,
+                         cx: &mut Context<Self>) {
+        let leagues: Vec<LeagueItem> = if cx.has_global::<PluginManagerHandle>() {
+            cx.global::<PluginManagerHandle>()
+              .0
+              .available_leagues()
+              .into_iter()
+              .map(LeagueItem::from)
+              .collect()
+        }
+        else {
+            Vec::new()
+        };
+        let competitions: Vec<CompetitionItem> = if cx.has_global::<PluginManagerHandle>() {
+            cx.global_mut::<PluginManagerHandle>()
+              .0
+              .competitions(&plugin_id)
+              .into_iter()
+              .map(CompetitionItem::from)
+              .collect()
+        }
+        else {
+            Vec::new()
+        };
+
+        let league_ix = league_index(&leagues, &plugin_id);
+        let competition_id = competitions.first()
+                                         .map(|competition| competition.id.clone());
+        let competition_ix = competition_id.as_deref()
+                                           .and_then(|id| competition_index(&competitions, id));
+
+        self.league_combobox.update(cx, |state, cx| {
+                                state.set_selected_indices(league_ix, window, cx)
+                            });
+        self.competition_combobox.update(cx, |state, cx| {
+                                     state.set_items(SearchableVec::new(competitions), window, cx);
+                                     state.set_selected_indices(competition_ix, window, cx);
+                                 });
 
         self.selected_plugin_id = Some(plugin_id);
         self.selected_competition_id = competition_id;
@@ -163,9 +259,8 @@ impl Render for RootView {
         let active_screen = self.active_screen;
         let active_match_tab = self.active_match_tab;
         let history_open_rows = self.history_open_rows.clone();
-        let selected_plugin_id = self.selected_plugin_id.clone();
-        let selected_competition_id = self.selected_competition_id.clone();
         let current_standings = self.current_standings.clone();
+        let show_competition = self.selected_plugin_id.is_some();
 
         div().flex()
              .flex_col()
@@ -173,9 +268,10 @@ impl Render for RootView {
              .bg(colors.desktop_bg)
              .child(render_header(&colors, active_screen, theme.key, cx))
              .child(render_league_selector(&colors,
-                                           selected_plugin_id.as_deref(),
-                                           selected_competition_id.as_deref(),
-                                           cx))
+                                           &self.league_combobox,
+                                           &self.competition_combobox,
+                                           show_competition,
+                                           self.league_selector_fallback.clone()))
              .child(div().id("content-area")
                          .flex()
                          .flex_col()

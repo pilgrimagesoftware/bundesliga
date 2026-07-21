@@ -32,6 +32,7 @@ league_selector:
   none_loaded: No leagues loaded - enable a plugin to see standings.
   select_league: Select league
   select_competition: Select competition
+  search: Search...
 match_tab:
   summary: Summary
   lineups: Lineups
