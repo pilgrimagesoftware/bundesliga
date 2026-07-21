@@ -6,22 +6,16 @@
 use std::path::PathBuf;
 
 use fulltime_ui::ui::plugin_manager::{
-    PluginManager, PluginManagerHandle, PluginSummary, StandingsRowSnapshot, StandingsSnapshot,
+    CompetitionSummary, LeagueSummary, PluginManager, PluginManagerHandle, PluginSummary,
+    StandingsRowSnapshot, StandingsSnapshot,
 };
 
 use crate::plugin_host::PluginHost;
 use crate::plugin_host::registry::PluginRegistry;
 
-/// The plugin id this pass fetches standings for. Picking a season/
-/// competition automatically (rather than exposing a picker) is
-/// deliberately minimal for the first real data flow — see
-/// `openspec/changes/plugin-host-runtime` task 5.1.
-const STANDINGS_PLUGIN_ID: &str = "bundesliga";
-
 struct FulltimePluginManager {
-    host:      PluginHost,
-    registry:  PluginRegistry,
-    standings: Option<StandingsSnapshot>,
+    host:     PluginHost,
+    registry: PluginRegistry,
 }
 
 impl PluginManager for FulltimePluginManager {
@@ -51,65 +45,78 @@ impl PluginManager for FulltimePluginManager {
         }
     }
 
-    fn standings(&self) -> Option<StandingsSnapshot> {
-        self.standings.clone()
-    }
-}
-
-/// Fetches the Bundesliga plugin's current-season standings, or `None` if
-/// it isn't loaded or the fetch fails for any reason (logged, not
-/// propagated — this is best-effort data for a screen that already has a
-/// mockup fallback).
-///
-/// Picks the highest-numbered `bl1-<season>` competition id (`Plugins/
-/// Bundesliga`'s `mapping::map_competition` issues one per season), since
-/// `list_competitions` returns every season OpenLigaDB has, not just the
-/// current one.
-fn fetch_bundesliga_standings(host: &mut PluginHost) -> Option<StandingsSnapshot> {
-    if !host.is_loaded(STANDINGS_PLUGIN_ID) {
-        return None;
+    fn available_leagues(&self) -> Vec<LeagueSummary> {
+        let locale = rust_i18n::locale();
+        self.registry
+            .discovered()
+            .filter(|(id, _)| self.host.is_loaded(id))
+            .map(|(id, plugin)| LeagueSummary { plugin_id:    id.to_owned(),
+                                                display_name: plugin.manifest
+                                                                    .localized_name(&locale)
+                                                                    .to_owned(), })
+            .collect()
     }
 
-    let competitions = match host.list_competitions(STANDINGS_PLUGIN_ID) {
-        Ok(competitions) => competitions,
-        Err(error) => {
-            tracing::warn!(%error, "failed to list Bundesliga competitions");
-            return None;
-        }
-    };
+    fn competitions(&mut self, plugin_id: &str) -> Vec<CompetitionSummary> {
+        let mut competitions = match self.host.list_competitions(plugin_id) {
+            Ok(competitions) => competitions,
+            Err(error) => {
+                tracing::warn!(%plugin_id, %error, "failed to list competitions");
+                return Vec::new();
+            }
+        };
 
-    let latest = competitions.iter().max_by_key(|competition| {
-                                         competition.id
-                                                    .rsplit('-')
-                                                    .next()
-                                                    .and_then(|season| season.parse::<u32>().ok())
-                                                    .unwrap_or(0)
-                                     })?;
+        // Sort most-recent-first, using the trailing numeric component of
+        // the competition id as a recency heuristic (e.g. Plugins/
+        // Bundesliga issues `bl1-<season>` ids) — the canonical schema has
+        // no structured season field to sort on instead.
+        competitions.sort_by_key(|competition| {
+                        std::cmp::Reverse(competition.id
+                                                     .rsplit('-')
+                                                     .next()
+                                                     .and_then(|suffix| suffix.parse::<u32>().ok())
+                                                     .unwrap_or(0))
+                    });
 
-    let standings = match host.fetch_standings(STANDINGS_PLUGIN_ID, &latest.id) {
-        Ok(standings) => standings,
-        Err(error) => {
-            tracing::warn!(competition_id = %latest.id, %error, "failed to fetch Bundesliga standings");
-            return None;
-        }
-    };
+        competitions.into_iter()
+                    .map(|competition| CompetitionSummary { id:   competition.id,
+                                                            name: competition.name, })
+                    .collect()
+    }
 
-    let rows = standings.groups
-                        .into_iter()
-                        .flat_map(|group| group.rows)
-                        .map(|row| StandingsRowSnapshot { team_name:     row.team.name,
-                                                          rank:          row.rank,
-                                                          played:        row.played,
-                                                          won:           row.won,
-                                                          drawn:         row.drawn,
-                                                          lost:          row.lost,
-                                                          goals_for:     row.goals_for,
-                                                          goals_against: row.goals_against,
-                                                          points:        row.points, })
-                        .collect();
+    fn fetch_standings(&mut self, plugin_id: &str, competition_id: &str)
+                       -> Option<StandingsSnapshot> {
+        let standings = match self.host.fetch_standings(plugin_id, competition_id) {
+            Ok(standings) => standings,
+            Err(error) => {
+                tracing::warn!(%plugin_id, %competition_id, %error, "failed to fetch standings");
+                return None;
+            }
+        };
 
-    Some(StandingsSnapshot { competition_name: latest.name.clone(),
-                             rows })
+        let rows = standings.groups
+                            .into_iter()
+                            .flat_map(|group| group.rows)
+                            .map(|row| StandingsRowSnapshot { team_name:     row.team.name,
+                                                              rank:          row.rank,
+                                                              played:        row.played,
+                                                              won:           row.won,
+                                                              drawn:         row.drawn,
+                                                              lost:          row.lost,
+                                                              goals_for:     row.goals_for,
+                                                              goals_against: row.goals_against,
+                                                              points:        row.points, })
+                            .collect();
+
+        let competition_name = self.competitions(plugin_id)
+                                   .into_iter()
+                                   .find(|competition| competition.id == competition_id)
+                                   .map(|competition| competition.name)
+                                   .unwrap_or_default();
+
+        Some(StandingsSnapshot { competition_name,
+                                 rows })
+    }
 }
 
 /// `~/Library/Application Support/com.pilgrimagesoftware.fulltime` on
@@ -133,8 +140,10 @@ fn app_data_dir() -> PathBuf {
 }
 
 /// Builds the real plugin manager: discovers bundled and user-installed
-/// plugins, loads the enabled ones into a fresh [`PluginHost`], and returns
-/// a handle ready for `cx.set_global`.
+/// plugins and loads the enabled ones into a fresh [`PluginHost`]. Returns a
+/// handle ready for `cx.set_global`; no standings fetch happens here
+/// anymore — the league/competition selector fetches on demand once the
+/// window is up (see `ui::views::root_view::RootView::new`).
 ///
 /// A plugin that fails to load at startup is logged and skipped rather than
 /// failing the whole app, matching the registry's own discovery behavior.
@@ -154,9 +163,5 @@ pub fn build() -> anyhow::Result<PluginManagerHandle> {
         tracing::warn!(%plugin_id, %error, "failed to load plugin at startup");
     }
 
-    let standings = fetch_bundesliga_standings(&mut host);
-
-    Ok(PluginManagerHandle(Box::new(FulltimePluginManager { host,
-                                                            registry,
-                                                            standings })))
+    Ok(PluginManagerHandle(Box::new(FulltimePluginManager { host, registry })))
 }

@@ -30,6 +30,7 @@ pub mod ui {
             pub mod card;
             pub mod form_dots;
             pub mod hero;
+            pub mod league_selector;
             pub mod legend;
             pub mod stat_grid;
             pub mod status_pill;

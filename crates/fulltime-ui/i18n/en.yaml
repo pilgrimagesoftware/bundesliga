@@ -27,12 +27,11 @@ plugins:
   unavailable: Plugin host is not available in this build.
   none_installed: No plugins installed.
   close_tooltip: Close
-league:
-  epl: EPL
-  la_liga: LaLiga
-  serie_a: Serie A
-  bundesliga: Bundesliga
-  ligue_1: Ligue 1
+league_selector:
+  unavailable: Plugin host is not available in this build.
+  none_loaded: No leagues loaded - enable a plugin to see standings.
+  select_league: Select league
+  select_competition: Select competition
 match_tab:
   summary: Summary
   lineups: Lineups

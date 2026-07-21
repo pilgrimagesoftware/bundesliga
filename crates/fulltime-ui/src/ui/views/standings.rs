@@ -1,19 +1,19 @@
 //! Standings screen: hero band + two-column body (standings table, matchday
-//! rail shell, top-scorers shell). The standings table renders real
-//! Bundesliga data when the plugin host fetched it successfully at startup
-//! (see `ui::plugin_manager::PluginManagerHandle::standings`), falling back
-//! to its mockup rows otherwise (feature off, plugin not loaded, or the
-//! fetch failed) — every other league, and the matchday rail/top-scorers
-//! panels, remain mockup-only; no data source exists for those yet. The
-//! results grid is a CSS-grid-based table (structured rows/columns, not
-//! one-off flexbox rows) rather than a virtualized `DataTable`, which proved
-//! unreliable for this small, static row set.
+//! rail shell, top-scorers shell). The standings table renders whichever
+//! league/competition is selected in the header's league selector (see
+//! `RootView`/`ui::views::components::league_selector`), falling back to
+//! its mockup rows if nothing is selected or the fetch failed — the
+//! matchday rail/top-scorers panels remain mockup-only regardless; no data
+//! source exists for those yet. The results grid is a CSS-grid-based table
+//! (structured rows/columns, not one-off flexbox rows) rather than a
+//! virtualized `DataTable`, which proved unreliable for this small, static
+//! row set.
 
 use gpui::prelude::*;
 use gpui::{App, Hsla, div, px};
 
-use crate::data::theme::{ColorTokens, League, ZoneColors, league_accent, zone_colors};
-use crate::ui::plugin_manager::{PluginManagerHandle, StandingsRowSnapshot};
+use crate::data::theme::{ColorTokens, ZoneColors, zone_colors};
+use crate::ui::plugin_manager::{StandingsRowSnapshot, StandingsSnapshot};
 use crate::ui::views::components::badge::render_badge;
 use crate::ui::views::components::card::render_card;
 use crate::ui::views::components::form_dots::{FormResult, render_form_dots};
@@ -111,32 +111,30 @@ const STANDINGS_HEADERS: &[&str] =
     &["#", "Club", "P", "W", "D", "L", "GF", "GA", "GD", "Pts", "Form"];
 
 /// Renders the Standings screen: no interactivity in this skeleton (the
-/// matchday stepper/season pill are static placeholders). Real data is only
-/// available for [`League::Bundesliga`] (see the module doc comment); every
-/// other league renders the mockup table.
-pub fn render_standings_screen(colors: &ColorTokens, active_league: League, cx: &App)
+/// matchday stepper/season pill are static placeholders). Renders `standings`
+/// (the header selector's current fetch, if any) in place of the mockup
+/// table when present.
+pub fn render_standings_screen(colors: &ColorTokens, standings: Option<StandingsSnapshot>,
+                               cx: &App)
                                -> impl IntoElement {
-    let accent = league_accent(active_league);
+    let accent = colors.accent;
     let zones = zone_colors(cx.global::<crate::data::theme::FullTimeTheme>().key);
 
-    let real_standings = (active_league == League::Bundesliga).then(|| {
-                             cx.try_global::<PluginManagerHandle>()
-                               .and_then(|handle| handle.0.standings())
-                         })
-                         .flatten();
-
-    let (season_label, rows): (String, Vec<DisplayRow>) = match real_standings {
-        Some(standings) => {
-            (standings.competition_name, standings.rows.into_iter().map(DisplayRow::from).collect())
-        }
-        None => ("2025/26".to_owned(), placeholder_table()),
+    let (eyebrow, season_label, rows): (String, String, Vec<DisplayRow>) = match standings {
+        // The competition name (e.g. "1. Fußball-Bundesliga 2026/2027") already
+        // includes the season, so there's nothing distinct left to show in the
+        // season-label pill for real data.
+        Some(standings) => (standings.competition_name,
+                            String::new(),
+                            standings.rows.into_iter().map(DisplayRow::from).collect()),
+        None => ("No league selected".to_owned(), "2025/26".to_owned(), placeholder_table()),
     };
     let club_count = rows.len();
 
     div().flex()
          .flex_col()
          .gap(px(20.0))
-         .child(render_hero(active_league.label(),
+         .child(render_hero(eyebrow,
                             "Standings",
                             div().flex()
                                  .items_center()

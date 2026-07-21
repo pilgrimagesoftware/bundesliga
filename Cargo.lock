@@ -2447,6 +2447,7 @@ dependencies = [
  "open",
  "reqwest 0.12.28",
  "rust-embed",
+ "rust-i18n",
  "sentry",
  "sentry-tracing",
  "serde",
@@ -2463,9 +2464,9 @@ dependencies = [
 
 [[package]]
 name = "fulltime-plugin-api"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "954ba780d524cc7434acb65ef7e6d1239f57ab969775bebe92baa60253f4761f"
+checksum = "ef25608925749d1f04bdf8014e36955c29daa5dd0ff0d9f97368323c13144001"
 dependencies = [
  "serde",
  "thiserror 2.0.19",

@@ -50,8 +50,26 @@ pub struct StandingsSnapshot {
     pub rows:             Vec<StandingsRowSnapshot>,
 }
 
-/// Lists and toggles installed plugins, and exposes the one real league-data
-/// fetch wired up so far. Implemented by `fulltime-core`.
+/// A league available through a loaded plugin, as the league selector shows
+/// it. One entry per loaded plugin — manifests have no display-name field,
+/// so `display_name` is currently always the plugin's `id`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LeagueSummary {
+    pub plugin_id:    String,
+    pub display_name: String,
+}
+
+/// A competition a league's plugin can supply data for, as the competition
+/// selector shows it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompetitionSummary {
+    pub id:   String,
+    pub name: String,
+}
+
+/// Lists and toggles installed plugins, and exposes the league/competition
+/// selection + standings fetch wired up so far. Implemented by
+/// `fulltime-core`.
 pub trait PluginManager: 'static {
     /// Every discovered plugin (bundled and user-installed), in whatever
     /// order the implementation finds natural — the screen sorts for
@@ -63,11 +81,20 @@ pub trait PluginManager: 'static {
     /// the next [`Self::list`] call reflects whatever actually happened.
     fn set_enabled(&mut self, id: &str, enabled: bool);
 
-    /// The Bundesliga plugin's standings table for its current season,
-    /// fetched once at startup. `None` if the plugin isn't loaded/enabled or
-    /// the fetch failed — the Standings screen falls back to its mockup
-    /// layout in that case.
-    fn standings(&self) -> Option<StandingsSnapshot>;
+    /// Every currently loaded and enabled plugin, as a league the selector
+    /// can offer. Empty if no plugin is loaded.
+    fn available_leagues(&self) -> Vec<LeagueSummary>;
+
+    /// Every competition `plugin_id` can supply data for, most recent
+    /// first. Empty if `plugin_id` isn't loaded or the underlying call
+    /// fails.
+    fn competitions(&mut self, plugin_id: &str) -> Vec<CompetitionSummary>;
+
+    /// Fetches `competition_id`'s standings table from `plugin_id`, live.
+    /// `None` if the plugin isn't loaded or the fetch fails — the Standings
+    /// screen falls back to its mockup layout in that case.
+    fn fetch_standings(&mut self, plugin_id: &str, competition_id: &str)
+                       -> Option<StandingsSnapshot>;
 }
 
 /// [`gpui::Global`] wrapper so a boxed [`PluginManager`] can be registered
