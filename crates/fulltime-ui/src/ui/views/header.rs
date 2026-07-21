@@ -70,16 +70,16 @@ fn render_league_tabs(active_league: League, cx: &mut Context<RootView>) -> impl
 }
 
 fn render_screen_nav(active_screen: AppScreen, cx: &mut Context<RootView>) -> impl IntoElement {
-    let selected_index = AppScreen::ALL.iter()
-                                       .position(|s| *s == active_screen)
-                                       .unwrap_or(0);
-    let labels: Vec<String> = AppScreen::ALL.iter().map(|s| s.label()).collect();
+    let selected_index = AppScreen::PRIMARY_NAV.iter()
+                                               .position(|s| *s == active_screen)
+                                               .unwrap_or(0);
+    let labels: Vec<String> = AppScreen::PRIMARY_NAV.iter().map(|s| s.label()).collect();
 
     render_tab_bar("header-screen-nav",
                    labels,
                    selected_index,
                    cx.listener(|this, ix: &usize, _window, cx| {
-                         this.set_screen(AppScreen::ALL[*ix], cx);
+                         this.set_screen(AppScreen::PRIMARY_NAV[*ix], cx);
                      }))
 }
 

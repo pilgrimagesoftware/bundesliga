@@ -15,12 +15,17 @@ menu:
   help_title: Help
 status_bar:
   disclaimer: Prototype data is illustrative, not live sports data.
+  plugins_tooltip: Plugins
 screen:
   standings: Standings
   match: Match
   history: History
   player: Player
   team: Team
+  plugins: Plugins
+plugins:
+  unavailable: Plugin host is not available in this build.
+  none_installed: No plugins installed.
 league:
   epl: EPL
   la_liga: LaLiga

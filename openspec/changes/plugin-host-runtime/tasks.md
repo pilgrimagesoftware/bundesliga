@@ -32,10 +32,11 @@
 
 ## 4. Plugin Management UI
 
-- [ ] 4.1 Add a `fulltime-ui` screen listing installed plugins (name, version,
+- [x] 4.1 Add a `fulltime-ui` screen listing installed plugins (name, version,
   enabled/disabled)
-- [ ] 4.2 Add enable/disable controls that take effect immediately
-- [ ] 4.3 Add an update-availability indicator per plugin
+- [x] 4.2 Add enable/disable controls that take effect immediately
+- [ ] 4.3 BLOCKED: same root cause as 3.5 - there is no update-source/update-availability
+  data anywhere to indicate. Depends on 3.5's `fulltime-plugin-api` manifest change first.
 
 ## 5. App Cutover
 

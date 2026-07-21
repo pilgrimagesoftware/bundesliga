@@ -4,7 +4,9 @@
 
 use rust_i18n::t;
 
-/// The five app views switched via the header's screen navigation control.
+/// The app views switched via the header's screen navigation control, plus
+/// the Plugins screen (reached from the status bar's plug button instead —
+/// see [`Self::PRIMARY_NAV`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppScreen {
     Standings,
@@ -12,14 +14,18 @@ pub enum AppScreen {
     History,
     Player,
     Team,
+    Plugins,
 }
 
 impl AppScreen {
-    pub const ALL: [AppScreen; 5] = [AppScreen::Standings,
-                                     AppScreen::Match,
-                                     AppScreen::History,
-                                     AppScreen::Player,
-                                     AppScreen::Team];
+    /// Screens shown in the header's tab-style screen navigation control.
+    /// Excludes [`Self::Plugins`], which is a status-bar utility screen, not
+    /// one of the primary content screens.
+    pub const PRIMARY_NAV: [AppScreen; 5] = [AppScreen::Standings,
+                                             AppScreen::Match,
+                                             AppScreen::History,
+                                             AppScreen::Player,
+                                             AppScreen::Team];
 
     /// Display label for the header's screen navigation control.
     pub fn label(self) -> String {
@@ -29,6 +35,7 @@ impl AppScreen {
             AppScreen::History => "screen.history",
             AppScreen::Player => "screen.player",
             AppScreen::Team => "screen.team",
+            AppScreen::Plugins => "screen.plugins",
         };
         t!(key).to_string()
     }

@@ -1,25 +1,41 @@
-//! Status bar view: the persistent footer disclaimer, matching the
-//! mockup's "Prototype data is illustrative, not live sports data." text
-//! shown beneath the content area on every screen.
+//! Status bar view: the persistent footer, matching the mockup's
+//! disclaimer text on the left, plus a right-aligned row of icon buttons
+//! for cross-screen utilities — currently just Plugins, with room for an
+//! activity indicator and an alerts button (not built yet) to join it
+//! later, matching the status-bar convention in `dtrpg-app.rs`.
 
 use gpui::prelude::*;
-use gpui::{App, div, px};
+use gpui::{Context, div, px};
+use gpui_component::Icon;
+use gpui_component::button::{Button, ButtonVariants as _};
+use gpui_component::status_bar::StatusBar;
 use rust_i18n::t;
 
 use crate::data::theme::ColorTokens;
+use crate::ui::app_state::AppScreen;
+use crate::ui::views::root_view::RootView;
 
-/// Renders the footer disclaimer row.
-pub fn render_status_bar(colors: &ColorTokens, _cx: &App) -> impl IntoElement + 'static + use<> {
+/// Renders the footer row: disclaimer on the left, utility buttons on the
+/// right.
+pub fn render_status_bar(colors: &ColorTokens, cx: &mut Context<RootView>) -> impl IntoElement {
+    let disclaimer = div().text_size(px(11.0))
+                          .text_color(colors.text_tertiary)
+                          .child(t!("status_bar.disclaimer").to_string());
+
+    let plugins_button =
+        Button::new("status-bar-plugins").ghost()
+                                         .compact()
+                                         .icon(Icon::default().path("icons/plug.svg"))
+                                         .tooltip(t!("status_bar.plugins_tooltip").to_string())
+                                         .on_click(cx.listener(|this, _event, _window, cx| {
+                                                         this.set_screen(AppScreen::Plugins, cx);
+                                                     }));
+
     div().h(px(26.0))
          .flex_none()
-         .flex()
-         .items_center()
-         .justify_center()
-         .px(px(12.0))
          .border_t_1()
          .border_color(colors.border)
          .bg(colors.surface_alt)
-         .text_size(px(11.0))
-         .text_color(colors.text_tertiary)
-         .child(t!("status_bar.disclaimer").to_string())
+         .px(px(12.0))
+         .child(StatusBar::new().left(disclaimer).right(plugins_button))
 }

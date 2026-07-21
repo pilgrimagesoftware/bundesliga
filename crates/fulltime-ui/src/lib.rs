@@ -2,10 +2,12 @@
 //!
 //! This crate holds everything platform-agnostic — window/menu bootstrap,
 //! theming, i18n, and the shell views (persistent header, status bar,
-//! and the five app-screen views). League/match/team data lands in later
-//! crates/modules once the OpenLigaDB/TheSportsDB port happens; the
-//! screens here render the Claude Design mockup's empty-state layouts,
-//! with no live data wired in yet.
+//! and the app-screen views). League/match/team data lands in later
+//! crates/modules once the OpenLigaDB/TheSportsDB port happens, so those
+//! screens render the Claude Design mockup's empty-state layouts with no
+//! live data wired in yet. The Plugins screen is the exception: it's backed
+//! by real data via the [`ui::plugin_manager::PluginManager`] trait, which
+//! `fulltime-core` implements against its `PluginHost`/`PluginRegistry`.
 
 // Embed all YAML locale files from `crates/fulltime-ui/i18n/` at compile
 // time. The `t!("module.key")` macro resolves to `crate::_rust_i18n_t(...)`,
@@ -19,6 +21,7 @@ pub mod ui {
     pub mod actions;
     pub mod app;
     pub mod app_state;
+    pub mod plugin_manager;
     pub mod widgets;
     pub mod views {
         pub mod components {
@@ -36,6 +39,7 @@ pub mod ui {
         pub mod history;
         pub mod match_view;
         pub mod player;
+        pub mod plugins;
         pub mod root_view;
         pub mod standings;
         pub mod status_bar;

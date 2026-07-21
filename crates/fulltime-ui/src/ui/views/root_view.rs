@@ -16,6 +16,7 @@ use crate::ui::views::header::render_header;
 use crate::ui::views::history::render_history_screen;
 use crate::ui::views::match_view::render_match_screen;
 use crate::ui::views::player::render_player_screen;
+use crate::ui::views::plugins::render_plugins_screen;
 use crate::ui::views::standings::render_standings_screen;
 use crate::ui::views::status_bar::render_status_bar;
 use crate::ui::views::team::render_team_screen;
@@ -102,6 +103,7 @@ impl Render for RootView {
                              AppScreen::History => render_history_screen(&colors, &history_open_rows, cx).into_any_element(),
                              AppScreen::Player => render_player_screen(&colors, cx).into_any_element(),
                              AppScreen::Team => render_team_screen(&colors, cx).into_any_element(),
+                             AppScreen::Plugins => render_plugins_screen(&colors, cx).into_any_element(),
                          }))
              .child(render_status_bar(&colors, cx))
     }

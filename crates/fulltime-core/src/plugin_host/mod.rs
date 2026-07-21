@@ -9,12 +9,14 @@
 //!
 //! Gated behind the `plugin-host` feature; see `Cargo.toml`.
 //!
-//! Not yet called from `app::run()`: task group 5 ("App Cutover") in
-//! `openspec/changes/plugin-host-runtime/tasks.md` wires this in once the
-//! app's UI/business logic is ready to consume `fulltime-plugin-api`'s
-//! canonical schema. Until then, this module's public API is exercised only
-//! by its own tests below.
-#![allow(dead_code, reason = "consumed by app cutover in task group 5")]
+//! `app::plugin_manager` (in `fulltime-core`) wires loading/discovery/
+//! enable-disable into the Plugins screen already. The data-fetching calls
+//! (`list_competitions`, `fetch_fixtures`, ...) and their canonical-schema
+//! return types are still unused outside this module's own tests: task
+//! group 5 ("App Cutover") in `openspec/changes/plugin-host-runtime/tasks.md`
+//! is what wires league/match/team data through them.
+#![allow(dead_code,
+         reason = "data-fetching calls consumed by app cutover in task group 5")]
 
 mod bindings;
 mod bundled;
