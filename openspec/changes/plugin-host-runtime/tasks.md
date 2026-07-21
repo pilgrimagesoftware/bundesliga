@@ -40,12 +40,25 @@
 
 ## 5. App Cutover
 
-- [ ] 5.1 Switch the app's UI/business logic to consume `fulltime-plugin-api`'s canonical
-  schema instead of any provider-specific type
-- [ ] 5.2 Coordinate with the `Plugins/Bundesliga` reference-plugin change to cut the app
-  over to loading Bundesliga data through the plugin path once that plugin is ready
+- [x] 5.1 Switch the app's UI/business logic to consume `fulltime-plugin-api`'s canonical
+  schema instead of any provider-specific type. Scoped to the Standings screen only for
+  this pass (user decision): there was no provider-specific type to migrate away from
+  (the app had zero SDK dependencies before this), so this and 5.2 became one piece of
+  work. Match/History/Team screens are a separate, similarly-scoped follow-up; the Player
+  screen can't be cut over at all — the canonical schema has no `Player` type.
+- [x] 5.2 Coordinate with the `Plugins/Bundesliga` reference-plugin change to cut the app
+  over to loading Bundesliga data through the plugin path once that plugin is ready.
+  Standings now fetches the Bundesliga plugin's current-season table once at startup
+  (`app::plugin_manager::fetch_bundesliga_standings`, picking the highest `bl1-<season>`
+  competition id) and renders it in place of the mockup table when available, falling
+  back to the mockup otherwise. Verified by running the real app: shows the actual live
+  2026/2027 Bundesliga table with real club names. Known minor issue: the grid's
+  uniform-width columns truncate some longer real club names (not present in gpui's
+  `grid_cols` API without a custom template) - not fixed in this pass.
 - [ ] 5.3 Remove the feature flag once the Bundesliga plugin path is validated in place of
-  any direct SDK dependency
+  any direct SDK dependency. Not yet: only the Standings screen is cut over, and the
+  feature flag still usefully gates the whole plugin-host runtime while Match/History/
+  Team remain mockup-only.
 
 ## 6. Verification
 

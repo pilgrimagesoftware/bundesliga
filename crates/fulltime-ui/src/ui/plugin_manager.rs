@@ -23,7 +23,35 @@ pub struct PluginSummary {
     pub enabled: bool,
 }
 
-/// Lists and toggles installed plugins. Implemented by `fulltime-core`.
+/// One row of a fetched standings table, mirroring `fulltime-plugin-api`'s
+/// canonical `standings-row` shape minus any field the Standings screen
+/// doesn't render. There is no "recent form" field in the canonical schema
+/// (`Fixture`/`Standings`/`Competition`/`Team` only), so the screen's Form
+/// column has nothing to show for real rows — see
+/// `ui::views::standings`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StandingsRowSnapshot {
+    pub team_name:     String,
+    pub rank:          u16,
+    pub played:        u16,
+    pub won:           u16,
+    pub drawn:         u16,
+    pub lost:          u16,
+    pub goals_for:     u16,
+    pub goals_against: u16,
+    pub points:        u16,
+}
+
+/// A fetched standings table for one competition, single-group only (the
+/// Standings screen doesn't yet render group-stage tournaments).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StandingsSnapshot {
+    pub competition_name: String,
+    pub rows:             Vec<StandingsRowSnapshot>,
+}
+
+/// Lists and toggles installed plugins, and exposes the one real league-data
+/// fetch wired up so far. Implemented by `fulltime-core`.
 pub trait PluginManager: 'static {
     /// Every discovered plugin (bundled and user-installed), in whatever
     /// order the implementation finds natural — the screen sorts for
@@ -34,6 +62,12 @@ pub trait PluginManager: 'static {
     /// log and otherwise silently ignore a failure (e.g. an unknown `id`);
     /// the next [`Self::list`] call reflects whatever actually happened.
     fn set_enabled(&mut self, id: &str, enabled: bool);
+
+    /// The Bundesliga plugin's standings table for its current season,
+    /// fetched once at startup. `None` if the plugin isn't loaded/enabled or
+    /// the fetch failed — the Standings screen falls back to its mockup
+    /// layout in that case.
+    fn standings(&self) -> Option<StandingsSnapshot>;
 }
 
 /// [`gpui::Global`] wrapper so a boxed [`PluginManager`] can be registered
