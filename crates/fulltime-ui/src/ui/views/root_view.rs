@@ -23,22 +23,43 @@ use crate::ui::views::team::render_team_screen;
 
 /// Top-level GPUI view for the FullTime main window.
 pub struct RootView {
-    active_screen:     AppScreen,
-    active_league:     League,
-    active_match_tab:  MatchTab,
-    history_open_rows: HashSet<usize>,
+    active_screen:      AppScreen,
+    active_league:      League,
+    active_match_tab:   MatchTab,
+    history_open_rows:  HashSet<usize>,
+    /// The screen to return to when the Plugins screen (a status-bar
+    /// utility screen, not one of the header's primary nav tabs) is closed.
+    /// Only updated when *entering* Plugins from elsewhere — see
+    /// [`Self::toggle_plugins_screen`].
+    pre_plugins_screen: AppScreen,
 }
 
 impl RootView {
     pub fn new(_window: &mut Window, _cx: &mut Context<Self>) -> Self {
-        Self { active_screen:     AppScreen::Standings,
-               active_league:     League::Bundesliga,
-               active_match_tab:  MatchTab::Summary,
-               history_open_rows: HashSet::new(), }
+        Self { active_screen:      AppScreen::Standings,
+               active_league:      League::Bundesliga,
+               active_match_tab:   MatchTab::Summary,
+               history_open_rows:  HashSet::new(),
+               pre_plugins_screen: AppScreen::Standings, }
     }
 
     pub fn set_screen(&mut self, screen: AppScreen, cx: &mut Context<Self>) {
         self.active_screen = screen;
+        cx.notify();
+    }
+
+    /// Opens the Plugins screen (remembering the screen to return to), or
+    /// closes it back to whichever screen was active before, if it's
+    /// already open. Used by both the status bar's Plugins button and the
+    /// Plugins screen's own close button, so the two stay in sync.
+    pub fn toggle_plugins_screen(&mut self, cx: &mut Context<Self>) {
+        if self.active_screen == AppScreen::Plugins {
+            self.active_screen = self.pre_plugins_screen;
+        }
+        else {
+            self.pre_plugins_screen = self.active_screen;
+            self.active_screen = AppScreen::Plugins;
+        }
         cx.notify();
     }
 
@@ -105,6 +126,6 @@ impl Render for RootView {
                              AppScreen::Team => render_team_screen(&colors, cx).into_any_element(),
                              AppScreen::Plugins => render_plugins_screen(&colors, cx).into_any_element(),
                          }))
-             .child(render_status_bar(&colors, cx))
+             .child(render_status_bar(&colors, active_screen, cx))
     }
 }

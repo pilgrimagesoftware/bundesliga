@@ -6,6 +6,8 @@
 
 use gpui::prelude::*;
 use gpui::{Context, SharedString, div, px};
+use gpui_component::IconName;
+use gpui_component::button::{Button, ButtonVariants as _};
 use gpui_component::switch::Switch;
 use rust_i18n::t;
 
@@ -15,10 +17,22 @@ use crate::ui::views::components::card::render_card;
 use crate::ui::views::root_view::RootView;
 
 pub fn render_plugins_screen(colors: &ColorTokens, cx: &mut Context<RootView>) -> impl IntoElement {
-    let title = div().text_size(px(20.0))
-                     .font_weight(gpui::FontWeight::BOLD)
-                     .text_color(colors.text_primary)
-                     .child(t!("screen.plugins").to_string());
+    let title = div().flex()
+                     .items_center()
+                     .justify_between()
+                     .child(div().text_size(px(20.0))
+                                 .font_weight(gpui::FontWeight::BOLD)
+                                 .text_color(colors.text_primary)
+                                 .child(t!("screen.plugins").to_string()))
+                     .child(Button::new("plugins-close").ghost()
+                                                        .compact()
+                                                        .icon(IconName::Close)
+                                                        .tooltip(t!("plugins.close_tooltip").to_string())
+                                                        .on_click(cx.listener(
+        |this, _event, _window, cx| {
+            this.toggle_plugins_screen(cx);
+        },
+    )));
 
     let Some(handle) = cx.try_global::<PluginManagerHandle>()
     else {

@@ -26,6 +26,7 @@ screen:
 plugins:
   unavailable: Plugin host is not available in this build.
   none_installed: No plugins installed.
+  close_tooltip: Close
 league:
   epl: EPL
   la_liga: LaLiga
