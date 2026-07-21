@@ -16,3 +16,7 @@ target
 *.log
 .DS_Store
 .envrc
+
+# Vendored plugin artifacts (see scripts/vendor-bundesliga-plugin.sh) -
+# regenerated from the plugins/bundesliga submodule, not checked in.
+/assets/plugins/*/

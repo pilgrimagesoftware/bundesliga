@@ -354,8 +354,19 @@ mod tests {
         Ok(())
     }
 
+    /// Discovers and loads the real Bundesliga plugin, vendored into
+    /// `assets/plugins/bundesliga/` by `scripts/vendor-bundesliga-plugin.sh`
+    /// (see that script and `plugins/bundesliga`, a git submodule). Only
+    /// compiles and instantiates the component — it does not call any
+    /// data-provider operation, since every one of them makes a live
+    /// request to `api.openligadb.de` (see
+    /// `discover_and_call_bundled_bundesliga_plugin_live` for that, ignored
+    /// by default the same way `plugins/bundesliga`'s own live tests are).
+    ///
+    /// Run `./scripts/vendor-bundesliga-plugin.sh` first if this fails with
+    /// zero discovered plugins.
     #[test]
-    fn discover_bundled_finds_nothing_when_assets_plugins_is_empty(
+    fn discover_bundled_finds_and_loads_the_real_bundesliga_plugin(
         )
         -> Result<(), Box<dyn std::error::Error>>
     {
@@ -363,8 +374,43 @@ mod tests {
         let mut registry = PluginRegistry::new(state_dir.path().join("state.json"))?;
 
         registry.discover_bundled();
+        assert_eq!(registry.discovered().count(), 1);
+        let (id, plugin) = registry.discovered()
+                                   .next()
+                                   .ok_or("expected one discovered plugin")?;
+        assert_eq!(id, "bundesliga");
+        assert_eq!(plugin.source, PluginSource::Bundled);
 
-        assert_eq!(registry.discovered().count(), 0);
+        let mut host = PluginHost::new()?;
+        let failures = registry.load_enabled(&mut host);
+        assert!(failures.is_empty(),
+                "unexpected load failures: {failures:?}");
+        assert!(host.is_loaded("bundesliga"));
+
+        Ok(())
+    }
+
+    /// Calls the real Bundesliga plugin's `list_competitions` through the
+    /// full discovery -> load -> call path, against the live
+    /// `api.openligadb.de` API. Ignored by default (live network call, not
+    /// suitable for routine `cargo test` runs); run explicitly with
+    /// `cargo test --features plugin-host -- --ignored`.
+    #[test]
+    #[ignore = "makes a live request to api.openligadb.de"]
+    fn discover_and_call_bundled_bundesliga_plugin_live(
+        )
+        -> Result<(), Box<dyn std::error::Error>>
+    {
+        let state_dir = tempfile::tempdir()?;
+        let mut registry = PluginRegistry::new(state_dir.path().join("state.json"))?;
+        registry.discover_bundled();
+
+        let mut host = PluginHost::new()?;
+        registry.load_enabled(&mut host);
+
+        let competitions = host.list_competitions("bundesliga")?;
+        assert!(!competitions.is_empty());
+
         Ok(())
     }
 

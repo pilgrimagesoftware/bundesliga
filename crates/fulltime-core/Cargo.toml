@@ -76,8 +76,12 @@ authors = ["Paul Schifferer <paul@schifferers.net>"]
 publisher = "Pilgrimage Software"
 license_file = "../../LICENSE.md"
 copyright = "Copyright (c) 2026 Pilgrimage Software"
-category = "Utility"
-before-packaging-command = "cargo build --release --package fulltime-core --features sentry"
+category = "Sports"
+# Vendors the Bundesliga plugin (assets/plugins/bundesliga/, from the
+# plugins/bundesliga git submodule) before building, so a release build
+# embeds it via rust-embed - see scripts/vendor-bundesliga-plugin.sh and
+# crates/fulltime-core/src/plugin_host/bundled.rs.
+before-packaging-command = "../../scripts/vendor-bundesliga-plugin.sh --release && cargo build --release --package fulltime-core --features sentry,plugin-host"
 icons = ["../../assets/icon/icon.png", "../../assets/icon/icon.icns", "../../assets/icon/icon.ico"]
 
 [package.metadata.packager.deb]
