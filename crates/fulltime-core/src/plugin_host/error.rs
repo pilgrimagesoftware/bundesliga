@@ -1,7 +1,5 @@
 //! Errors surfaced by the plugin host runtime.
 
-use std::path::PathBuf;
-
 use fulltime_plugin_api::{ManifestError, Version};
 
 use super::bindings::fulltime::plugin_api::errors::ProviderError;
@@ -15,23 +13,24 @@ use super::bindings::fulltime::plugin_api::errors::ProviderError;
 #[derive(Debug, thiserror::Error)]
 pub enum PluginHostError {
     /// The plugin's manifest file could not be read from disk.
-    #[error("failed to read manifest for plugin at {path}: {source}")]
+    #[error("failed to read manifest for plugin at {location}: {source}")]
     ManifestIo {
         /// Path to the manifest file that could not be read.
-        path:   PathBuf,
+        location: String,
         /// Underlying I/O error.
         #[source]
-        source: std::io::Error,
+        source:   std::io::Error,
     },
 
-    /// The plugin's manifest file is malformed or missing required fields.
-    #[error("plugin manifest at {path} is invalid: {source}")]
+    /// The plugin's manifest is malformed or missing required fields.
+    #[error("plugin manifest at {location} is invalid: {source}")]
     InvalidManifest {
-        /// Path to the invalid manifest file.
-        path:   PathBuf,
+        /// Path to the invalid manifest file, or a descriptive label if the
+        /// manifest came from an embedded source rather than a real file.
+        location: String,
         /// Underlying validation error.
         #[source]
-        source: ManifestError,
+        source:   ManifestError,
     },
 
     /// The plugin declares a schema or interface version this host does not
@@ -54,15 +53,13 @@ pub enum PluginHostError {
     },
 
     /// The plugin's `.wasm` component bytes could not be read from disk.
-    #[error("failed to read component bytes for plugin {plugin_id:?} at {path}: {source}")]
+    #[error("failed to read component bytes at {location}: {source}")]
     ComponentIo {
-        /// The plugin's manifest-declared `id`.
-        plugin_id: String,
         /// Path to the component file that could not be read.
-        path:      PathBuf,
+        location: String,
         /// Underlying I/O error.
         #[source]
-        source:    std::io::Error,
+        source:   std::io::Error,
     },
 
     /// The plugin's `.wasm` bytes failed to compile as a valid component.

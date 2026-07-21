@@ -18,14 +18,17 @@
 
 ## 3. Plugin Manifest Registry
 
-- [ ] 3.1 Implement discovery of bundled first-party plugins at startup
-- [ ] 3.2 Implement discovery of user-installed plugins from a user plugin directory
-- [ ] 3.3 Validate discovered manifests via `fulltime-plugin-api`, skipping and logging
+- [x] 3.1 Implement discovery of bundled first-party plugins at startup
+- [x] 3.2 Implement discovery of user-installed plugins from a user plugin directory
+- [x] 3.3 Validate discovered manifests via `fulltime-plugin-api`, skipping and logging
   invalid ones rather than failing startup
-- [ ] 3.4 Implement enable/disable state per plugin, persisted across restarts, separate
+- [x] 3.4 Implement enable/disable state per plugin, persisted across restarts, separate
   from the plugin's own manifest file
-- [ ] 3.5 Implement installed-version tracking and update-availability detection for
-  plugins with a declared update source
+- [ ] 3.5 BLOCKED: `fulltime-plugin-api`'s `Manifest` (0.1.1) has no field for a plugin to
+  declare an update source at all (`id`, `version`, `schema_version`, `interface_version`,
+  `network_hosts` only) — this task can't be implemented against the current manifest
+  format. Needs a `fulltime-plugin-api` change (new optional manifest field, e.g.
+  `update_source`) before this is possible; out of scope for this repo alone.
 
 ## 4. Plugin Management UI
 

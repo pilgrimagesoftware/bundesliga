@@ -17,8 +17,12 @@
 #![allow(dead_code, reason = "consumed by app cutover in task group 5")]
 
 mod bindings;
+mod bundled;
 mod error;
 mod host_impl;
+pub mod registry;
+#[cfg(test)]
+mod test_support;
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -78,31 +82,62 @@ impl PluginHost {
                   plugins: HashMap::new() })
     }
 
-    /// Loads (or reloads) a plugin from its manifest and component bytes.
+    /// Loads (or reloads) a plugin from its manifest and component files on
+    /// disk — the path a user-installed plugin discovered by
+    /// [`registry`](super::registry) is loaded through.
     ///
     /// Reloading an already-loaded plugin (same `id`) replaces the compiled
     /// component in place; the next call to that plugin uses the new bytes.
     /// No app restart is required in either case.
     ///
     /// # Errors
-    /// Returns [`PluginHostError::ManifestIo`] or
-    /// [`PluginHostError::InvalidManifest`] if the manifest cannot be read
-    /// or parsed, [`PluginHostError::IncompatibleVersion`] if the plugin
-    /// targets a schema/interface version this host does not support, or
-    /// [`PluginHostError::ComponentIo`]/[`PluginHostError::Compile`] if the
-    /// component bytes cannot be read or compiled.
+    /// Returns [`PluginHostError::ManifestIo`] if the manifest cannot be
+    /// read, [`PluginHostError::ComponentIo`] if the component bytes cannot
+    /// be read, or any error [`Self::load_from_source`] returns.
     pub fn load(&mut self, manifest_path: &Path, component_path: &Path)
                 -> Result<(), PluginHostError> {
         let manifest_source = std::fs::read_to_string(manifest_path).map_err(|source| {
-                                  PluginHostError::ManifestIo { path: manifest_path.to_path_buf(),
+                                  PluginHostError::ManifestIo { location:
+                                                                    manifest_path.display()
+                                                                                 .to_string(),
                                                                 source }
                               })?;
-        let manifest = Manifest::parse(&manifest_source).map_err(|source| {
-                                                            PluginHostError::InvalidManifest {
-                path: manifest_path.to_path_buf(),
-                source,
-            }
-                                                        })?;
+        let component_bytes = std::fs::read(component_path).map_err(|source| {
+                                                               PluginHostError::ComponentIo {
+                                              location: component_path.display().to_string(),
+                                              source,
+                                          }
+                                                           })?;
+
+        self.load_from_source(&manifest_path.display().to_string(),
+                              &manifest_source,
+                              component_bytes)
+    }
+
+    /// Loads (or reloads) a plugin from an already-read manifest source and
+    /// component bytes — the path a bundled plugin discovered by
+    /// [`registry`](super::registry), embedded into the binary rather than
+    /// present as a real file, is loaded through.
+    ///
+    /// `location` is a human-readable identifier used only in error
+    /// messages (a filesystem path for [`Self::load`], or a descriptive
+    /// label like `"bundled:<id>"` for an embedded plugin).
+    ///
+    /// # Errors
+    /// Returns [`PluginHostError::InvalidManifest`] if the manifest doesn't
+    /// parse, [`PluginHostError::IncompatibleVersion`] if the plugin targets
+    /// a schema/interface version this host does not support, or
+    /// [`PluginHostError::Compile`] if the component bytes don't compile as
+    /// a valid component.
+    pub fn load_from_source(&mut self, location: &str, manifest_source: &str,
+                            component_bytes: Vec<u8>)
+                            -> Result<(), PluginHostError> {
+        let manifest = Manifest::parse(manifest_source).map_err(|source| {
+                                                           PluginHostError::InvalidManifest {
+                                                 location: location.to_owned(),
+                                                 source,
+                                             }
+                                                       })?;
 
         if !SCHEMA_VERSION.accepts(manifest.schema_version)
            || !INTERFACE_VERSION.accepts(manifest.interface_version)
@@ -116,13 +151,6 @@ impl PluginHost {
                                                               host_interface:   INTERFACE_VERSION, });
         }
 
-        let component_bytes = std::fs::read(component_path).map_err(|source| {
-                                                               PluginHostError::ComponentIo {
-                plugin_id: manifest.id.clone(),
-                path: component_path.to_path_buf(),
-                source,
-            }
-                                                           })?;
         let component = Component::new(&self.engine, component_bytes).map_err(|source| {
                                                                          PluginHostError::Compile {
                 plugin_id: manifest.id.clone(),
@@ -349,30 +377,7 @@ mod tests {
         Ok(())
     }
 
-    /// Compiles `fulltime-plugin-fixture` to `wasm32-wasip2` (a real
-    /// component, not just a core wasm module — see that crate's own doc
-    /// comment) and returns its manifest and component paths.
-    fn build_fixture() -> Result<(PathBuf, PathBuf), Box<dyn std::error::Error>> {
-        let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
-                                                                      .canonicalize()?;
-        let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
-
-        let status = std::process::Command::new(cargo).args(["build",
-                                                             "--target",
-                                                             "wasm32-wasip2",
-                                                             "--package",
-                                                             "fulltime-plugin-fixture"])
-                                                      .current_dir(&workspace_root)
-                                                      .status()?;
-        if !status.success() {
-            return Err(format!("building fulltime-plugin-fixture failed: {status}").into());
-        }
-
-        let manifest_path = workspace_root.join("crates/fulltime-plugin-fixture/manifest.toml");
-        let wasm_path =
-            workspace_root.join("target/wasm32-wasip2/debug/fulltime_plugin_fixture.wasm");
-        Ok((manifest_path, wasm_path))
-    }
+    use super::test_support::build_fixture;
 
     /// Loads the fixture plugin and drives every operation through it,
     /// covering the whole of task group 2: loading with version validation,
