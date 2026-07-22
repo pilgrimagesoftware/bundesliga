@@ -4,49 +4,31 @@ This file provides guidance to Claude Code (claude.ai/code), Codex (openai.com/c
 
 ## Project Overview
 
-A Tauri v2 desktop app for displaying Bundesliga football league tables and scores. Built with a Rust backend (via Tauri) and a SvelteKit/TypeScript frontend. Data comes from the free OpenLigaDB REST API via the `openligadb` Rust crate.
+A native desktop app for Bundesliga football league tables and scores, built with GPUI (the UI
+framework behind Zed) and `gpui-component`. Data comes from the OpenLigaDB REST API (planned,
+not yet wired into the UI). See `README.md` for the workspace layout, dev commands, and
+architecture overview.
 
-## Development Commands
+## Gotchas
 
-```bash
-# Full dev mode (starts Vite + Tauri together)
-cargo tauri dev
-
-# Frontend only
-pnpm dev
-
-# Production build (Tauri binary)
-cargo tauri build
-
-# TypeScript + Svelte type checking
-pnpm check
-pnpm check:watch
-```
-
-Rust-specific: `cargo test`, `cargo clippy`, `cargo fmt` run from `src-tauri/`.
-
-## Architecture
-
-### Frontend (SvelteKit + Svelte 5)
-- **Entry**: `src/routes/+page.svelte` — single-page UI with league/season dropdowns and table
-- **Config**: Static Site Generation (SSG) — no SSR; output goes to `../build` for Tauri to serve
-- **Communication**: Calls Rust via `invoke()` from `@tauri-apps/api/core`
-- **Types**: `src/types/` — `League`, `TableTeam`, `Sport` interfaces
-
-### Backend (Rust / Tauri)
-- **Entry**: `src-tauri/src/lib.rs` — all Tauri commands and `BundesligaState` struct
-- **Commands exposed to frontend**: `get_leagues()`, `get_seasons()`, `get_table()`
-- **Data source**: `openligadb` crate (wraps the OpenLigaDB API for German football)
-- **Plugins**: `tauri-plugin-log`, `tauri-plugin-window-state` (desktop), `tauri-plugin-opener`
-
-### Frontend ↔ Backend Flow
-1. On mount: `get_leagues()` — populate league dropdown
-2. On league select: `get_seasons()` — returns hardcoded `[2024]`
-3. On season select: `get_table()` — fetch standings; auto-refreshes every 30s
-
-## Key Configuration
-- Vite dev server: port `1420` (required by Tauri)
-- Window: 800×600, title "Football Scores"
-- CSP: disabled (`null` in `tauri.conf.json`)
-- Node: 22.9.0 (`.node-version`), Rust: 1.82 (`.rust-version`)
-- Capabilities: `src-tauri/capabilities/` — controls Tauri API permissions
+- `gpui`/`gpui_platform` are pinned directly against `zed-industries/zed` at a specific `rev` in
+  the root `Cargo.toml`, not just pulled in transitively through `gpui-component`. `gpui-component`
+  pins its own `gpui`/`gpui_platform` rev independently in its own `Cargo.toml` - the two revs are
+  not the same and updating one doesn't update the other.
+- `gpui-component` ships widgets that overlap in name but not behavior with hand-rolled
+  fulltime-ui code: `gpui_component::badge::Badge` is a notification-count/dot overlay, not the
+  same thing as an initials-based avatar badge (that maps to `gpui_component::avatar::Avatar`
+  instead). Check the actual widget behavior, not just the name, before assuming a match.
+- `gpui-component` widgets read colors from `cx.theme()` (`gpui_component::Theme`), a separate
+  global from this app's own `FullTimeTheme`. The two are synced only via
+  `data::theme::apply_theme_colors`, called on theme application - a `gpui-component` widget
+  using a semantic color field that function doesn't map yet will silently render
+  `gpui-component`'s built-in default instead of the active FullTime palette.
+- The workspace denies `unwrap()`/`expect()` and `unsafe` via `[workspace.lints]` in the root
+  `Cargo.toml` — this applies to every crate in the workspace, not just `fulltime-core`.
+- `crates/fulltime-plugin-fixture` is excluded from `cargo build`/`cargo test`'s default set
+  (workspace `default-members`) — it only builds for `wasm32-wasip2`, exercised by
+  `fulltime-core`'s plugin host tests, not by a normal native build.
+- `plugins/bundesliga` is a git submodule with its own `Cargo.lock`/toolchain, excluded from the
+  workspace entirely (`exclude` in the root `Cargo.toml`) — it's vendored only so its source is
+  available for `scripts/vendor-bundesliga-plugin.sh` to build to `wasm32-wasip2`.
