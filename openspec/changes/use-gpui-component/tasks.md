@@ -57,3 +57,24 @@
 - [ ] 7.2 `cargo test --workspace` passes
 - [ ] 7.3 Full manual pass through every migrated screen (Standings, Match, Team, Player,
       History, Plugins) in both light and dark `FullTimeTheme` variants
+
+## 8. Migrate gpui to gpui-ce via a workspace `[patch]` override
+
+- [ ] 8.1 Add `[patch."https://github.com/zed-industries/zed"]` to the top-level `Cargo.toml`,
+      redirecting `gpui` and `gpui_platform` to `git = "https://github.com/gpui-ce/gpui-ce"`.
+      Leave `gpui-component`'s own `Cargo.toml` unchanged — the patch applies transitively to
+      its `gpui`/`gpui_platform` dependency without it needing any change
+- [ ] 8.2 `cargo build` and `cargo clippy --all-targets --all-features -- -D warnings` against
+      the patched dependency graph. If either fails, treat it as `gpui-ce`/Zed `gpui` API drift
+      to triage (pin the patch to a specific `gpui-ce` rev closer to the currently-pinned Zed
+      `gpui` rev `1d217ee3`, or report the gap) — not a reason to abandon the patch approach
+- [ ] 8.3 Audit fulltime-ui's direct `gpui`/`gpui_platform` API usage (not just usage that goes
+      through `gpui-component`) for any behavior that compiled but might differ at runtime
+- [ ] 8.4 `cargo test --workspace` passes against the patched dependency graph
+- [ ] 8.5 Full manual visual and interaction pass across every screen in task 7.3's list
+      (Standings, Match, Team, Player, History, Plugins), in both light and dark
+      `FullTimeTheme` variants, including window resize, input focus, and keyboard navigation —
+      a rendering-backend swap can shift behavior a screenshot diff alone won't catch
+- [ ] 8.6 If `gpui-ce`'s default branch has drifted enough from `1d217ee3` to require pinning
+      (per 8.2), add an explicit `rev` to the patch entries and note the reasoning in the
+      commit message, consistent with the rest of the workspace's pinned-rev dependency style
