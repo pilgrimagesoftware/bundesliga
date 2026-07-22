@@ -19,12 +19,15 @@ pub mod data;
 pub mod i18n;
 pub mod ui {
     pub mod actions;
+    pub mod activity;
     pub mod app;
     pub mod app_state;
     pub mod plugin_manager;
     pub mod widgets;
     pub mod views {
         pub mod components {
+            pub mod activity_panel;
+            pub mod alert_history_panel;
             pub mod back_button;
             pub mod badge;
             pub mod card;

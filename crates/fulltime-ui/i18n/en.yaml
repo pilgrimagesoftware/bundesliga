@@ -16,6 +16,14 @@ menu:
 status_bar:
   disclaimer: Prototype data is illustrative, not live sports data.
   plugins_tooltip: Plugins
+  activity_tooltip: Activity
+  alerts_tooltip: Alerts
+activity_panel:
+  empty: No activity yet.
+  status_in_progress: In progress
+  status_complete: Complete
+alert_history_panel:
+  empty: No alerts yet.
 screen:
   standings: Standings
   match: Match
