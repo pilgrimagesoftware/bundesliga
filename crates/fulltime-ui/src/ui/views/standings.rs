@@ -13,10 +13,10 @@ use gpui::prelude::*;
 use gpui::{App, Hsla, div, px};
 use gpui_component::Sizable;
 use gpui_component::avatar::Avatar;
+use gpui_component::group_box::{GroupBox, GroupBoxVariants as _};
 
-use crate::data::theme::{ColorTokens, ZoneColors, zone_colors};
+use crate::data::theme::{ColorTokens, FullTimeTheme, ZoneColors, zone_colors};
 use crate::ui::plugin_manager::{StandingsRowSnapshot, StandingsSnapshot};
-use crate::ui::views::components::card::render_card;
 use crate::ui::views::components::form_dots::{FormResult, render_form_dots};
 use crate::ui::views::components::hero::render_hero;
 use crate::ui::views::components::legend::render_legend_item;
@@ -119,7 +119,7 @@ pub fn render_standings_screen(colors: &ColorTokens, standings: Option<Standings
                                cx: &App)
                                -> impl IntoElement {
     let accent = colors.accent;
-    let zones = zone_colors(cx.global::<crate::data::theme::FullTimeTheme>().key);
+    let zones = zone_colors(cx.global::<FullTimeTheme>().key);
 
     let (eyebrow, season_label, rows): (String, String, Vec<DisplayRow>) = match standings {
         // The competition name (e.g. "1. Fußball-Bundesliga 2026/2027") already
@@ -258,13 +258,28 @@ fn grid_cell(bg: Hsla, text_color: Hsla, value: String) -> gpui::AnyElement {
 }
 
 fn render_matchday_rail(colors: &ColorTokens, cx: &App) -> impl IntoElement {
-    render_card(cx).child(div().text_size(px(14.5))
-                               .font_weight(gpui::FontWeight::BOLD)
-                               .child("Matchday"))
-                   .children((1..=4).map(|i| render_matchday_fixture(i, cx)))
-                   .child(div().text_size(px(12.0))
-                               .text_color(colors.accent)
-                               .child("Full schedule →"))
+    card_group_box(cx).child(div().text_size(px(14.5))
+                                  .font_weight(gpui::FontWeight::BOLD)
+                                  .child("Matchday"))
+                      .children((1..=4).map(|i| render_matchday_fixture(i, cx)))
+                      .child(div().text_size(px(12.0))
+                                  .text_color(colors.accent)
+                                  .child("Full schedule →"))
+}
+
+/// Bordered, rounded card container via `gpui_component::group_box::GroupBox`,
+/// overriding its content background/radius/gap defaults to match this
+/// app's `surface`/`radius.base` tokens and `px(12.0)` child gap
+/// (`GroupBox::Outline` gives a matching 1px border and `px(16.0)`
+/// padding, but no background, a 6px radius, and a 16px rather than 12px
+/// gap between children).
+fn card_group_box(cx: &App) -> GroupBox {
+    let theme = cx.global::<FullTimeTheme>();
+    let mut content_style = div().bg(theme.colors.surface)
+                                 .rounded(theme.radius.base)
+                                 .gap(px(12.0));
+
+    GroupBox::new().outline().content_style(content_style.style().clone())
 }
 
 fn render_matchday_fixture(i: u8, cx: &App) -> impl IntoElement {
@@ -288,10 +303,10 @@ fn render_matchday_fixture(i: u8, cx: &App) -> impl IntoElement {
 }
 
 fn render_top_scorers(colors: &ColorTokens, cx: &App) -> impl IntoElement {
-    render_card(cx).child(div().text_size(px(14.5))
-                               .font_weight(gpui::FontWeight::BOLD)
-                               .child("Top Scorers"))
-                   .children((1..=5).map(|i| render_top_scorer_row(colors, i)))
+    card_group_box(cx).child(div().text_size(px(14.5))
+                                  .font_weight(gpui::FontWeight::BOLD)
+                                  .child("Top Scorers"))
+                      .children((1..=5).map(|i| render_top_scorer_row(colors, i)))
 }
 
 fn render_top_scorer_row(colors: &ColorTokens, i: u8) -> impl IntoElement {

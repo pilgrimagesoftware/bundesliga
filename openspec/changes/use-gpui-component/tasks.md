@@ -19,12 +19,12 @@
 
 ## 3. Migrate card.rs to GroupBox
 
-- [ ] 3.1 Replace `render_card` call sites in `standings.rs` with `gpui_component::group_box::GroupBox`,
+- [x] 3.1 Replace `render_card` call sites in `standings.rs` with `gpui_component::group_box::GroupBox`,
       overriding padding/gap via `StyleRefinement` if the defaults don't match `px(16.0)`/`px(12.0)`
 - [ ] 3.2 Visually compare `standings.rs` against its pre-migration screenshot
-- [ ] 3.3 Replace `render_card` call sites in `plugins.rs` with `GroupBox`
+- [x] 3.3 Replace `render_card` call sites in `plugins.rs` with `GroupBox`
 - [ ] 3.4 Visually compare `plugins.rs` against its pre-migration screenshot
-- [ ] 3.5 Delete `views/components/card.rs` and its module declaration
+- [x] 3.5 Delete `views/components/card.rs` and its module declaration
 
 ## 4. Migrate back_button.rs to Button
 

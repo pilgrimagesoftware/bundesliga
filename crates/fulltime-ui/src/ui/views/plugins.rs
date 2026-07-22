@@ -5,15 +5,15 @@
 //! directly.
 
 use gpui::prelude::*;
-use gpui::{Context, SharedString, div, px};
+use gpui::{App, Context, SharedString, div, px};
 use gpui_component::IconName;
 use gpui_component::button::{Button, ButtonVariants as _};
+use gpui_component::group_box::{GroupBox, GroupBoxVariants as _};
 use gpui_component::switch::Switch;
 use rust_i18n::t;
 
-use crate::data::theme::ColorTokens;
+use crate::data::theme::{ColorTokens, FullTimeTheme};
 use crate::ui::plugin_manager::{PluginManagerHandle, PluginSummary};
-use crate::ui::views::components::card::render_card;
 use crate::ui::views::root_view::RootView;
 
 pub fn render_plugins_screen(colors: &ColorTokens, cx: &mut Context<RootView>) -> impl IntoElement {
@@ -76,24 +76,39 @@ fn render_plugin_row(colors: &ColorTokens, plugin: PluginSummary, cx: &mut Conte
     let id = plugin.id.clone();
     let switch_id: SharedString = format!("plugin-toggle-{}", plugin.id).into();
 
-    render_card(cx).flex_row()
-                   .items_center()
-                   .justify_between()
-                   .child(div().flex()
-                               .flex_col()
-                               .gap(px(2.0))
-                               .child(div().font_weight(gpui::FontWeight::SEMIBOLD)
-                                           .child(plugin.id.clone()))
-                               .child(div().text_size(px(12.0))
-                                           .text_color(colors.text_tertiary)
-                                           .child(format!("v{}", plugin.version))))
-                   .child(Switch::new(switch_id).checked(plugin.enabled)
-                                                .on_click(move |checked, _window, cx| {
-                                                    if cx.has_global::<PluginManagerHandle>() {
-                                                        cx.update_global::<PluginManagerHandle, _>(|handle, cx| {
-                                                              handle.0.set_enabled(&id, *checked, cx);
-                                                          });
-                                                    }
-                                                    cx.refresh_windows();
-                                                }))
+    row_card(cx).child(div().flex()
+                           .flex_col()
+                           .gap(px(2.0))
+                           .child(div().font_weight(gpui::FontWeight::SEMIBOLD)
+                                       .child(plugin.id.clone()))
+                           .child(div().text_size(px(12.0))
+                                       .text_color(colors.text_tertiary)
+                                       .child(format!("v{}", plugin.version))))
+               .child(Switch::new(switch_id).checked(plugin.enabled)
+                                            .on_click(move |checked, _window, cx| {
+                                                if cx.has_global::<PluginManagerHandle>() {
+                                                    cx.update_global::<PluginManagerHandle, _>(|handle, cx| {
+                                                          handle.0.set_enabled(&id, *checked, cx);
+                                                      });
+                                                }
+                                                cx.refresh_windows();
+                                            }))
+}
+
+/// Bordered, rounded row card via `gpui_component::group_box::GroupBox`,
+/// overriding the content container to lay out its children as a
+/// space-between row (matching the plugin row's previous hand-rolled
+/// `.flex_row().items_center().justify_between()` card) and to match this
+/// app's `surface`/`radius.base`/`px(12.0)`-gap tokens rather than
+/// `GroupBox`'s defaults.
+fn row_card(cx: &App) -> GroupBox {
+    let theme = cx.global::<FullTimeTheme>();
+    let mut content_style = div().flex_row()
+                                 .items_center()
+                                 .justify_between()
+                                 .bg(theme.colors.surface)
+                                 .rounded(theme.radius.base)
+                                 .gap(px(12.0));
+
+    GroupBox::new().outline().content_style(content_style.style().clone())
 }
