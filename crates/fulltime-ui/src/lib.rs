@@ -33,7 +33,6 @@ pub mod ui {
             pub mod league_selector;
             pub mod legend;
             pub mod stat_grid;
-            pub mod status_pill;
             pub mod tab_bar;
         }
         pub mod header;

@@ -10,17 +10,18 @@
 //! row set.
 
 use gpui::prelude::*;
-use gpui::{App, Hsla, div, px};
+use gpui::{AnimationExt, AnyElement, App, Hsla, SharedString, div, px};
 use gpui_component::Sizable;
 use gpui_component::avatar::Avatar;
 use gpui_component::group_box::{GroupBox, GroupBoxVariants as _};
+use gpui_component::tag::{Tag, TagVariant};
 
 use crate::data::theme::{ColorTokens, FullTimeTheme, ZoneColors, zone_colors};
+use crate::ui::app_state::MatchStatus;
 use crate::ui::plugin_manager::{StandingsRowSnapshot, StandingsSnapshot};
 use crate::ui::views::components::form_dots::{FormResult, render_form_dots};
 use crate::ui::views::components::hero::render_hero;
 use crate::ui::views::components::legend::render_legend_item;
-use crate::ui::views::components::status_pill::{MatchStatus, render_status_pill};
 
 /// One rendered standings row, from either the mockup table or a real
 /// [`StandingsRowSnapshot`]. `form` is `None` for real rows: the canonical
@@ -247,7 +248,7 @@ fn render_standings_grid(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors,
          .children(body_cells)
 }
 
-fn grid_cell(bg: Hsla, text_color: Hsla, value: String) -> gpui::AnyElement {
+fn grid_cell(bg: Hsla, text_color: Hsla, value: String) -> AnyElement {
     div().px(px(8.0))
          .py(px(6.0))
          .bg(bg)
@@ -261,7 +262,7 @@ fn render_matchday_rail(colors: &ColorTokens, cx: &App) -> impl IntoElement {
     card_group_box(cx).child(div().text_size(px(14.5))
                                   .font_weight(gpui::FontWeight::BOLD)
                                   .child("Matchday"))
-                      .children((1..=4).map(|i| render_matchday_fixture(i, cx)))
+                      .children((1..=4).map(render_matchday_fixture))
                       .child(div().text_size(px(12.0))
                                   .text_color(colors.accent)
                                   .child("Full schedule →"))
@@ -282,7 +283,7 @@ fn card_group_box(cx: &App) -> GroupBox {
     GroupBox::new().outline().content_style(content_style.style().clone())
 }
 
-fn render_matchday_fixture(i: u8, cx: &App) -> impl IntoElement {
+fn render_matchday_fixture(i: u8) -> impl IntoElement {
     let status = match i {
         1 => MatchStatus::Live,
         2 => MatchStatus::FullTime,
@@ -299,7 +300,44 @@ fn render_matchday_fixture(i: u8, cx: &App) -> impl IntoElement {
          .justify_between()
          .py(px(6.0))
          .child(div().text_size(px(12.0)).child(format!("Fixture {i}")))
-         .child(render_status_pill(status, label, cx))
+         .child(render_match_status(status, label))
+}
+
+/// Renders a match status indicator via `gpui_component::tag::Tag`,
+/// mapping `MatchStatus` to the `Tag` variant whose theme color matches its
+/// previous hand-rolled color: `Live` used the theme's accent (now
+/// `Danger`, since `Live` reads as this app's "urgent" state), `FullTime`
+/// used a neutral surface tint (now `Secondary`), and `Scheduled` used a
+/// dimmer neutral tint (now `Warning`, for "upcoming"). The `Live` state's
+/// looping opacity pulse wraps the `Tag` rather than being reimplemented.
+fn render_match_status(status: MatchStatus, label: impl Into<SharedString>) -> AnyElement {
+    let variant = match status {
+        MatchStatus::Live => TagVariant::Danger,
+        MatchStatus::FullTime => TagVariant::Secondary,
+        MatchStatus::Scheduled => TagVariant::Warning,
+    };
+
+    let tag = Tag::new().with_variant(variant)
+                       .rounded_full()
+                       .px(px(8.0))
+                       .py(px(2.0))
+                       .text_size(px(11.0))
+                       .font_weight(gpui::FontWeight::SEMIBOLD)
+                       .child(label.into());
+
+    if status == MatchStatus::Live {
+        tag.with_animation("live-status-pulse",
+                           gpui::Animation::new(std::time::Duration::from_millis(1600)).repeat(),
+                           |this, delta| {
+                               let opacity =
+                                   1.0 - (delta * std::f32::consts::PI).sin().abs() * 0.65;
+                               this.opacity(opacity)
+                           })
+           .into_any_element()
+    }
+    else {
+        tag.into_any_element()
+    }
 }
 
 fn render_top_scorers(colors: &ColorTokens, cx: &App) -> impl IntoElement {

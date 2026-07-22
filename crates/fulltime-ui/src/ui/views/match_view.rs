@@ -3,17 +3,54 @@
 //! match data exists yet.
 
 use gpui::prelude::*;
-use gpui::{Context, Hsla, div, px};
+use gpui::{AnimationExt, AnyElement, Context, Hsla, SharedString, div, px};
 use gpui_component::IconName;
 use gpui_component::Sizable;
 use gpui_component::avatar::Avatar;
 use gpui_component::button::{Button, ButtonVariants as _};
+use gpui_component::tag::{Tag, TagVariant};
 
 use crate::data::theme::ColorTokens;
-use crate::ui::app_state::{AppScreen, MatchTab};
-use crate::ui::views::components::status_pill::{MatchStatus, render_status_pill};
+use crate::ui::app_state::{AppScreen, MatchStatus, MatchTab};
 use crate::ui::views::components::tab_bar::render_tab_bar;
 use crate::ui::views::root_view::RootView;
+
+/// Renders a match status indicator via `gpui_component::tag::Tag`,
+/// mapping `MatchStatus` to the `Tag` variant whose theme color matches its
+/// previous hand-rolled color: `Live` used the theme's accent (now
+/// `Danger`, since `Live` reads as this app's "urgent" state), `FullTime`
+/// used a neutral surface tint (now `Secondary`), and `Scheduled` used a
+/// dimmer neutral tint (now `Warning`, for "upcoming"). The `Live` state's
+/// looping opacity pulse wraps the `Tag` rather than being reimplemented.
+fn render_match_status(status: MatchStatus, label: impl Into<SharedString>) -> AnyElement {
+    let variant = match status {
+        MatchStatus::Live => TagVariant::Danger,
+        MatchStatus::FullTime => TagVariant::Secondary,
+        MatchStatus::Scheduled => TagVariant::Warning,
+    };
+
+    let tag = Tag::new().with_variant(variant)
+                       .rounded_full()
+                       .px(px(8.0))
+                       .py(px(2.0))
+                       .text_size(px(11.0))
+                       .font_weight(gpui::FontWeight::SEMIBOLD)
+                       .child(label.into());
+
+    if status == MatchStatus::Live {
+        tag.with_animation("live-status-pulse",
+                           gpui::Animation::new(std::time::Duration::from_millis(1600)).repeat(),
+                           |this, delta| {
+                               let opacity =
+                                   1.0 - (delta * std::f32::consts::PI).sin().abs() * 0.65;
+                               this.opacity(opacity)
+                           })
+           .into_any_element()
+    }
+    else {
+        tag.into_any_element()
+    }
+}
 
 pub fn render_match_screen(colors: &ColorTokens, active_tab: MatchTab,
                            cx: &mut Context<RootView>)
@@ -31,12 +68,12 @@ pub fn render_match_screen(colors: &ColorTokens, active_tab: MatchTab,
                                         .on_click(cx.listener(|this, _event, _window, cx| {
                                               this.set_screen(AppScreen::Standings, cx);
                                           })))
-         .child(render_score_header(colors, cx))
+         .child(render_score_header(colors))
          .child(render_match_tabs(active_tab, cx))
          .child(render_tab_body(colors, active_tab))
 }
 
-fn render_score_header(colors: &ColorTokens, cx: &Context<RootView>) -> impl IntoElement {
+fn render_score_header(colors: &ColorTokens) -> impl IntoElement {
     let accent = colors.accent;
 
     div().flex()
@@ -61,7 +98,7 @@ fn render_score_header(colors: &ColorTokens, cx: &Context<RootView>) -> impl Int
                      .flex_col()
                      .items_center()
                      .gap(px(6.0))
-                     .child(render_status_pill(MatchStatus::Live, "LIVE", cx))
+                     .child(render_match_status(MatchStatus::Live, "LIVE"))
                      .child(div().text_size(px(44.0))
                                  .font_weight(gpui::FontWeight::BOLD)
                                  .child("2 - 1"))

@@ -36,14 +36,14 @@
 
 ## 5. Migrate status_pill.rs to Tag
 
-- [ ] 5.1 Replace `render_status_pill`/`MatchStatus` call sites in `match_view.rs` and
+- [x] 5.1 Replace `render_status_pill`/`MatchStatus` call sites in `match_view.rs` and
       `standings.rs` with `gpui_component::tag::Tag`, mapping `Live`/`FullTime`/`Scheduled` to
       the appropriate `TagVariant`
-- [ ] 5.2 Wrap the `Live`-state `Tag` in the existing `AnimationExt` opacity-pulse loop so the
+- [x] 5.2 Wrap the `Live`-state `Tag` in the existing `AnimationExt` opacity-pulse loop so the
       animation is preserved
 - [ ] 5.3 Visually compare `match_view.rs` and `standings.rs` against pre-migration screenshots,
       including the `Live` pulse animation
-- [ ] 5.4 Delete `views/components/status_pill.rs` and its module declaration
+- [x] 5.4 Delete `views/components/status_pill.rs` and its module declaration
 
 ## 6. Record what stays custom
 

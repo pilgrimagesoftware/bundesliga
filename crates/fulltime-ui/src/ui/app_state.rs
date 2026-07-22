@@ -61,3 +61,13 @@ impl MatchTab {
         t!(key).to_string()
     }
 }
+
+/// A fixture's display status, used by the Match screen's score header and
+/// the Standings screen's matchday rail to render a `Tag` in the
+/// corresponding variant.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MatchStatus {
+    Live,
+    FullTime,
+    Scheduled,
+}
