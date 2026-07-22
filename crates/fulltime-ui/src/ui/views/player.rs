@@ -2,12 +2,14 @@
 //! state only — no real player data exists yet.
 
 use gpui::prelude::*;
-use gpui::{App, Context, div, px};
+use gpui::{Context, Hsla, div, px};
+use gpui_component::IconName;
+use gpui_component::Sizable;
+use gpui_component::avatar::Avatar;
+use gpui_component::button::{Button, ButtonVariants as _};
 
 use crate::data::theme::ColorTokens;
 use crate::ui::app_state::AppScreen;
-use crate::ui::views::components::back_button::render_back_button;
-use crate::ui::views::components::badge::render_badge;
 use crate::ui::views::components::stat_grid::{StatCell, render_stat_grid};
 use crate::ui::views::root_view::RootView;
 
@@ -15,16 +17,17 @@ pub fn render_player_screen(colors: &ColorTokens, cx: &mut Context<RootView>) ->
     div().flex()
          .flex_col()
          .gap(px(20.0))
-         .child(render_back_button("player-back",
-                                   "Team",
-                                   cx.listener(|this, _event, _window, cx| {
-                                         this.set_screen(AppScreen::Team, cx);
-                                     }),
-                                   cx))
-         .child(render_detail_hero(colors,
-                                   "Player Placeholder",
-                                   "Midfielder · #10 · Sample FC",
-                                   cx))
+         .child(Button::new("player-back").ghost()
+                                          .compact()
+                                          .small()
+                                          .icon(IconName::ArrowLeft)
+                                          .label("Team")
+                                          .text_size(px(13.0))
+                                          .gap(px(4.0))
+                                          .on_click(cx.listener(|this, _event, _window, cx| {
+                                                          this.set_screen(AppScreen::Team, cx);
+                                                      })))
+         .child(render_detail_hero(colors, "Player Placeholder", "Midfielder · #10 · Sample FC"))
          .child(render_stat_grid(&[StatCell::new("18", "Appearances"),
                                    StatCell::new("6", "Goals"),
                                    StatCell::new("4", "Assists"),
@@ -34,17 +37,20 @@ pub fn render_player_screen(colors: &ColorTokens, cx: &mut Context<RootView>) ->
                                  cx))
 }
 
-fn render_detail_hero(colors: &ColorTokens, name: &str, meta: &str, cx: &App) -> impl IntoElement {
+fn render_detail_hero(colors: &ColorTokens, name: &str, meta: &str) -> impl IntoElement {
     div().flex()
          .items_center()
          .gap(px(16.0))
          .p(px(20.0))
          .rounded(px(16.0))
          .bg(colors.surface_alt)
-         .child(render_badge(name.chars().take(2).collect::<String>(),
-                             colors.accent,
-                             56.0,
-                             cx))
+         .child(Avatar::new().name(name.chars().take(2).collect::<String>())
+                             .with_size(px(56.0))
+                             .bg(Hsla { a: 0.18,
+                                        ..colors.accent })
+                             .text_color(colors.text_primary)
+                             .text_size(px(56.0 * 0.38))
+                             .border_0())
          .child(div().flex()
                      .flex_col()
                      .gap(px(4.0))

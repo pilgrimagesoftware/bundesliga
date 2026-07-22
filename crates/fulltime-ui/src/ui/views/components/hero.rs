@@ -1,6 +1,10 @@
 //! Hero banner component: the title band used at the top of the Standings
 //! and History screens (league name, kicker text, and optional trailing
 //! controls/stat chips).
+//!
+//! Evaluated against `gpui-component` during the `use-gpui-component`
+//! migration and kept custom: this is a page-level layout composition,
+//! not a discrete widget the pinned revision has an equivalent for.
 
 use gpui::prelude::*;
 use gpui::{App, SharedString, div, px};

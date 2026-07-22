@@ -10,16 +10,18 @@
 //! row set.
 
 use gpui::prelude::*;
-use gpui::{App, Hsla, div, px};
+use gpui::{AnimationExt, AnyElement, App, Hsla, SharedString, div, px};
+use gpui_component::Sizable;
+use gpui_component::avatar::Avatar;
+use gpui_component::group_box::{GroupBox, GroupBoxVariants as _};
+use gpui_component::tag::{Tag, TagVariant};
 
-use crate::data::theme::{ColorTokens, ZoneColors, zone_colors};
+use crate::data::theme::{ColorTokens, FullTimeTheme, ZoneColors, zone_colors};
+use crate::ui::app_state::MatchStatus;
 use crate::ui::plugin_manager::{StandingsRowSnapshot, StandingsSnapshot};
-use crate::ui::views::components::badge::render_badge;
-use crate::ui::views::components::card::render_card;
 use crate::ui::views::components::form_dots::{FormResult, render_form_dots};
 use crate::ui::views::components::hero::render_hero;
 use crate::ui::views::components::legend::render_legend_item;
-use crate::ui::views::components::status_pill::{MatchStatus, render_status_pill};
 
 /// One rendered standings row, from either the mockup table or a real
 /// [`StandingsRowSnapshot`]. `form` is `None` for real rows: the canonical
@@ -118,7 +120,7 @@ pub fn render_standings_screen(colors: &ColorTokens, standings: Option<Standings
                                cx: &App)
                                -> impl IntoElement {
     let accent = colors.accent;
-    let zones = zone_colors(cx.global::<crate::data::theme::FullTimeTheme>().key);
+    let zones = zone_colors(cx.global::<FullTimeTheme>().key);
 
     let (eyebrow, season_label, rows): (String, String, Vec<DisplayRow>) = match standings {
         // The competition name (e.g. "1. Fußball-Bundesliga 2026/2027") already
@@ -170,7 +172,7 @@ fn render_standings_table_panel(colors: &ColorTokens, accent: Hsla, zones: &Zone
          .flex()
          .flex_col()
          .gap(px(12.0))
-         .child(render_standings_grid(colors, accent, zones, rows, cx))
+         .child(render_standings_grid(colors, accent, zones, rows))
          .child(div().flex()
                      .gap(px(16.0))
                      .child(render_legend_item(zones.ucl, "Champions League", cx))
@@ -179,7 +181,7 @@ fn render_standings_table_panel(colors: &ColorTokens, accent: Hsla, zones: &Zone
 }
 
 fn render_standings_grid(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors,
-                         rows: Vec<DisplayRow>, cx: &App)
+                         rows: Vec<DisplayRow>)
                          -> impl IntoElement {
     let header_cells = STANDINGS_HEADERS.iter().map(|label| {
                                                    div().px(px(8.0))
@@ -211,10 +213,15 @@ fn render_standings_grid(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors,
                              .bg(bg)
                              .text_color(colors.text_primary)
                              .text_size(px(13.0))
-                             .child(render_badge(row.club.chars().take(2).collect::<String>(),
-                                                 accent,
-                                                 20.0,
-                                                 cx))
+                             .child(Avatar::new().name(row.club
+                                                          .chars()
+                                                          .take(2)
+                                                          .collect::<String>())
+                                                 .with_size(px(20.0))
+                                                 .bg(Hsla { a: 0.18, ..accent })
+                                                 .text_color(colors.text_primary)
+                                                 .text_size(px(20.0 * 0.38))
+                                                 .border_0())
                              .child(row.club)
                              .into_any_element());
         body_cells.push(grid_cell(bg, colors.text_primary, row.p.to_string()));
@@ -244,7 +251,7 @@ fn render_standings_grid(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors,
          .children(body_cells)
 }
 
-fn grid_cell(bg: Hsla, text_color: Hsla, value: String) -> gpui::AnyElement {
+fn grid_cell(bg: Hsla, text_color: Hsla, value: String) -> AnyElement {
     div().px(px(8.0))
          .py(px(6.0))
          .bg(bg)
@@ -255,16 +262,32 @@ fn grid_cell(bg: Hsla, text_color: Hsla, value: String) -> gpui::AnyElement {
 }
 
 fn render_matchday_rail(colors: &ColorTokens, cx: &App) -> impl IntoElement {
-    render_card(cx).child(div().text_size(px(14.5))
-                               .font_weight(gpui::FontWeight::BOLD)
-                               .child("Matchday"))
-                   .children((1..=4).map(|i| render_matchday_fixture(i, cx)))
-                   .child(div().text_size(px(12.0))
-                               .text_color(colors.accent)
-                               .child("Full schedule →"))
+    card_group_box(cx).child(div().text_size(px(14.5))
+                                  .font_weight(gpui::FontWeight::BOLD)
+                                  .child("Matchday"))
+                      .children((1..=4).map(render_matchday_fixture))
+                      .child(div().text_size(px(12.0))
+                                  .text_color(colors.accent)
+                                  .child("Full schedule →"))
 }
 
-fn render_matchday_fixture(i: u8, cx: &App) -> impl IntoElement {
+/// Bordered, rounded card container via `gpui_component::group_box::GroupBox`,
+/// overriding its content background/radius/gap defaults to match this
+/// app's `surface`/`radius.base` tokens and `px(12.0)` child gap
+/// (`GroupBox::Outline` gives a matching 1px border and `px(16.0)`
+/// padding, but no background, a 6px radius, and a 16px rather than 12px
+/// gap between children).
+fn card_group_box(cx: &App) -> GroupBox {
+    let theme = cx.global::<FullTimeTheme>();
+    let mut content_style = div().bg(theme.colors.surface)
+                                 .rounded(theme.radius.base)
+                                 .gap(px(12.0));
+
+    GroupBox::new().outline()
+                   .content_style(content_style.style().clone())
+}
+
+fn render_matchday_fixture(i: u8) -> impl IntoElement {
     let status = match i {
         1 => MatchStatus::Live,
         2 => MatchStatus::FullTime,
@@ -281,14 +304,51 @@ fn render_matchday_fixture(i: u8, cx: &App) -> impl IntoElement {
          .justify_between()
          .py(px(6.0))
          .child(div().text_size(px(12.0)).child(format!("Fixture {i}")))
-         .child(render_status_pill(status, label, cx))
+         .child(render_match_status(status, label))
+}
+
+/// Renders a match status indicator via `gpui_component::tag::Tag`,
+/// mapping `MatchStatus` to the `Tag` variant whose theme color matches its
+/// previous hand-rolled color: `Live` used the theme's accent (now
+/// `Danger`, since `Live` reads as this app's "urgent" state), `FullTime`
+/// used a neutral surface tint (now `Secondary`), and `Scheduled` used a
+/// dimmer neutral tint (now `Warning`, for "upcoming"). The `Live` state's
+/// looping opacity pulse wraps the `Tag` rather than being reimplemented.
+fn render_match_status(status: MatchStatus, label: impl Into<SharedString>) -> AnyElement {
+    let variant = match status {
+        MatchStatus::Live => TagVariant::Danger,
+        MatchStatus::FullTime => TagVariant::Secondary,
+        MatchStatus::Scheduled => TagVariant::Warning,
+    };
+
+    let tag = Tag::new().with_variant(variant)
+                        .rounded_full()
+                        .px(px(8.0))
+                        .py(px(2.0))
+                        .text_size(px(11.0))
+                        .font_weight(gpui::FontWeight::SEMIBOLD)
+                        .child(label.into());
+
+    if status == MatchStatus::Live {
+        tag.with_animation("live-status-pulse",
+                           gpui::Animation::new(std::time::Duration::from_millis(1600)).repeat(),
+                           |this, delta| {
+                               let opacity =
+                                   1.0 - (delta * std::f32::consts::PI).sin().abs() * 0.65;
+                               this.opacity(opacity)
+                           })
+           .into_any_element()
+    }
+    else {
+        tag.into_any_element()
+    }
 }
 
 fn render_top_scorers(colors: &ColorTokens, cx: &App) -> impl IntoElement {
-    render_card(cx).child(div().text_size(px(14.5))
-                               .font_weight(gpui::FontWeight::BOLD)
-                               .child("Top Scorers"))
-                   .children((1..=5).map(|i| render_top_scorer_row(colors, i)))
+    card_group_box(cx).child(div().text_size(px(14.5))
+                                  .font_weight(gpui::FontWeight::BOLD)
+                                  .child("Top Scorers"))
+                      .children((1..=5).map(|i| render_top_scorer_row(colors, i)))
 }
 
 fn render_top_scorer_row(colors: &ColorTokens, i: u8) -> impl IntoElement {

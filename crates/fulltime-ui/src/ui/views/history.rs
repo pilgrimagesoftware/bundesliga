@@ -6,10 +6,12 @@ use std::collections::HashSet;
 
 use gpui::prelude::*;
 use gpui::{AnyElement, Context, div, px};
+use gpui_component::IconName;
+use gpui_component::Sizable;
+use gpui_component::button::{Button, ButtonVariants as _};
 
 use crate::data::theme::ColorTokens;
 use crate::ui::app_state::AppScreen;
-use crate::ui::views::components::back_button::render_back_button;
 use crate::ui::views::components::hero::render_hero;
 use crate::ui::views::root_view::RootView;
 
@@ -24,12 +26,17 @@ pub fn render_history_screen(colors: &ColorTokens, open_rows: &HashSet<usize>,
         rows.push(render_matchday_row(colors, ix, is_open, cx).into_any_element());
     }
 
-    let back_button = render_back_button("history-back",
-                                         "Standings",
-                                         cx.listener(|this, _event, _window, cx| {
-                                               this.set_screen(AppScreen::Standings, cx);
-                                           }),
-                                         cx);
+    let back_button =
+        Button::new("history-back").ghost()
+                                   .compact()
+                                   .small()
+                                   .icon(IconName::ArrowLeft)
+                                   .label("Standings")
+                                   .text_size(px(13.0))
+                                   .gap(px(4.0))
+                                   .on_click(cx.listener(|this, _event, _window, cx| {
+                                                   this.set_screen(AppScreen::Standings, cx);
+                                               }));
     let hero = render_hero("Bundesliga",
                            format!("{MATCHDAY_COUNT} Matchdays"),
                            div(),

@@ -1,6 +1,10 @@
 //! Form-indicator dots component: a row of small colored dots (win/draw/
 //! loss) summarizing recent results, used in the Standings table and the
 //! Team screen.
+//!
+//! Evaluated against `gpui-component` during the `use-gpui-component`
+//! migration and kept custom: no widget in the pinned revision represents
+//! a multi-dot result strip.
 
 use gpui::prelude::*;
 use gpui::{div, px};

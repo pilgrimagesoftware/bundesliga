@@ -42,6 +42,12 @@ pub struct ColorTokens {
     pub accent_on:      Hsla,
     /// Error / destructive state (red).
     pub error:          Hsla,
+    /// Success state (green).
+    pub success:        Hsla,
+    /// Warning state (amber).
+    pub warning:        Hsla,
+    /// Informational state (blue).
+    pub info:           Hsla,
 }
 
 /// Identifies one of the two named themes.
@@ -246,6 +252,18 @@ pub fn apply_theme_colors(theme: &mut gpui_component::Theme, colors: &ColorToken
     theme.colors.danger_active = colors.error;
     theme.colors.danger_foreground = colors.accent_on;
     theme.colors.danger_hover = colors.error;
+    theme.colors.success = colors.success;
+    theme.colors.success_active = colors.success;
+    theme.colors.success_foreground = colors.accent_on;
+    theme.colors.success_hover = colors.success;
+    theme.colors.warning = colors.warning;
+    theme.colors.warning_active = colors.warning;
+    theme.colors.warning_foreground = colors.accent_on;
+    theme.colors.warning_hover = colors.warning;
+    theme.colors.info = colors.info;
+    theme.colors.info_active = colors.info;
+    theme.colors.info_foreground = colors.accent_on;
+    theme.colors.info_hover = colors.info;
 
     theme.tokens.primary = colors.accent.into();
     theme.tokens.primary_active = colors.accent_soft.into();
@@ -259,6 +277,18 @@ pub fn apply_theme_colors(theme: &mut gpui_component::Theme, colors: &ColorToken
     theme.tokens.danger_active = colors.error.into();
     theme.tokens.danger_foreground = colors.accent_on.into();
     theme.tokens.danger_hover = colors.error.into();
+    theme.tokens.success = colors.success.into();
+    theme.tokens.success_active = colors.success.into();
+    theme.tokens.success_foreground = colors.accent_on.into();
+    theme.tokens.success_hover = colors.success.into();
+    theme.tokens.warning = colors.warning.into();
+    theme.tokens.warning_active = colors.warning.into();
+    theme.tokens.warning_foreground = colors.accent_on.into();
+    theme.tokens.warning_hover = colors.warning.into();
+    theme.tokens.info = colors.info.into();
+    theme.tokens.info_active = colors.info.into();
+    theme.tokens.info_foreground = colors.accent_on.into();
+    theme.tokens.info_hover = colors.info.into();
 
     theme.colors.button = colors.surface_alt;
     theme.colors.button_hover = colors.hover;
@@ -343,7 +373,10 @@ fn pitch_colors() -> ColorTokens {
                   accent:         hex(0xD2, 0x05, 0x15),
                   accent_soft:    hex_a(0xD2, 0x05, 0x15, 0.13),
                   accent_on:      hex(0xFC, 0xFB, 0xF8),
-                  error:          hex(0xB0, 0x30, 0x28), }
+                  error:          hex(0xB0, 0x30, 0x28),
+                  success:        hex(0x04, 0x78, 0x57),
+                  warning:        hex(0xB4, 0x53, 0x09),
+                  info:           hex(0x03, 0x69, 0xA1), }
 }
 
 // ── Pitch Night (dark) ─────────────────────────────────────────────────────
@@ -361,5 +394,8 @@ fn pitch_night_colors() -> ColorTokens {
                   accent:         hex(0xE8, 0x3A, 0x47),
                   accent_soft:    hex_a(0xE8, 0x3A, 0x47, 0.16),
                   accent_on:      hex(0x22, 0x21, 0x1C),
-                  error:          hex(0xE0, 0x58, 0x58), }
+                  error:          hex(0xE0, 0x58, 0x58),
+                  success:        hex(0x4A, 0xDE, 0x80),
+                  warning:        hex(0xFB, 0xBF, 0x24),
+                  info:           hex(0x38, 0xBD, 0xF8), }
 }

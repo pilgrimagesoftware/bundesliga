@@ -1,4 +1,8 @@
 //! Small reusable rendering helpers shared across views.
+//!
+//! Evaluated against `gpui-component` during the `use-gpui-component`
+//! migration and kept custom: `small_caps_text` is a string transform, not
+//! a render function, so it isn't a "UI component" this migration covers.
 
 use gpui::SharedString;
 

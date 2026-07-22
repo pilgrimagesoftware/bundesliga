@@ -1,5 +1,9 @@
 //! Stat cell grid component: a 3-column grid of big-number/label cells,
 //! used identically for Player and Team screen season stats.
+//!
+//! Evaluated against `gpui-component` during the `use-gpui-component`
+//! migration and kept custom: this is a page-level layout composition,
+//! not a discrete widget the pinned revision has an equivalent for.
 
 use gpui::prelude::*;
 use gpui::{App, SharedString, div, px};

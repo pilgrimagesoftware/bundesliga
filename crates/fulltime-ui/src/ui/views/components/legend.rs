@@ -1,5 +1,11 @@
 //! Legend item component: a colored dot plus a label, reused for the
 //! standings zone legend and (later) chart legends.
+//!
+//! Evaluated against `gpui-component` during the `use-gpui-component`
+//! migration and kept custom: the closest widget, `Tag`, renders a filled
+//! pill rather than a solid dot, and this component appears side-by-side
+//! with `Tag`-based status pills elsewhere, so swapping it in would blur
+//! a visual distinction the design relies on.
 
 use gpui::prelude::*;
 use gpui::{App, Hsla, SharedString, div, px};
