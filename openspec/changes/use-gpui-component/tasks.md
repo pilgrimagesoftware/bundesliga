@@ -28,11 +28,11 @@
 
 ## 4. Migrate back_button.rs to Button
 
-- [ ] 4.1 Replace `render_back_button` call sites in `team.rs`, `match_view.rs`, `history.rs`,
+- [x] 4.1 Replace `render_back_button` call sites in `team.rs`, `match_view.rs`, `history.rs`,
       and `player.rs` with a ghost/text-variant `gpui_component::button::Button` plus a leading
       arrow `Icon`
 - [ ] 4.2 Visually compare each of the four screens against pre-migration screenshots
-- [ ] 4.3 Delete `views/components/back_button.rs` and its module declaration
+- [x] 4.3 Delete `views/components/back_button.rs` and its module declaration
 
 ## 5. Migrate status_pill.rs to Tag
 

@@ -4,12 +4,13 @@
 
 use gpui::prelude::*;
 use gpui::{Context, Hsla, div, px};
+use gpui_component::IconName;
 use gpui_component::Sizable;
 use gpui_component::avatar::Avatar;
+use gpui_component::button::{Button, ButtonVariants as _};
 
 use crate::data::theme::ColorTokens;
 use crate::ui::app_state::{AppScreen, MatchTab};
-use crate::ui::views::components::back_button::render_back_button;
 use crate::ui::views::components::status_pill::{MatchStatus, render_status_pill};
 use crate::ui::views::components::tab_bar::render_tab_bar;
 use crate::ui::views::root_view::RootView;
@@ -20,12 +21,16 @@ pub fn render_match_screen(colors: &ColorTokens, active_tab: MatchTab,
     div().flex()
          .flex_col()
          .gap(px(20.0))
-         .child(render_back_button("match-back",
-                                   "Standings",
-                                   cx.listener(|this, _event, _window, cx| {
-                                         this.set_screen(AppScreen::Standings, cx);
-                                     }),
-                                   cx))
+         .child(Button::new("match-back").ghost()
+                                        .compact()
+                                        .small()
+                                        .icon(IconName::ArrowLeft)
+                                        .label("Standings")
+                                        .text_size(px(13.0))
+                                        .gap(px(4.0))
+                                        .on_click(cx.listener(|this, _event, _window, cx| {
+                                              this.set_screen(AppScreen::Standings, cx);
+                                          })))
          .child(render_score_header(colors, cx))
          .child(render_match_tabs(active_tab, cx))
          .child(render_tab_body(colors, active_tab))

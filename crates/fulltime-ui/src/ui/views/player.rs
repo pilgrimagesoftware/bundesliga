@@ -3,12 +3,13 @@
 
 use gpui::prelude::*;
 use gpui::{Context, Hsla, div, px};
+use gpui_component::IconName;
 use gpui_component::Sizable;
 use gpui_component::avatar::Avatar;
+use gpui_component::button::{Button, ButtonVariants as _};
 
 use crate::data::theme::ColorTokens;
 use crate::ui::app_state::AppScreen;
-use crate::ui::views::components::back_button::render_back_button;
 use crate::ui::views::components::stat_grid::{StatCell, render_stat_grid};
 use crate::ui::views::root_view::RootView;
 
@@ -16,12 +17,16 @@ pub fn render_player_screen(colors: &ColorTokens, cx: &mut Context<RootView>) ->
     div().flex()
          .flex_col()
          .gap(px(20.0))
-         .child(render_back_button("player-back",
-                                   "Team",
-                                   cx.listener(|this, _event, _window, cx| {
-                                         this.set_screen(AppScreen::Team, cx);
-                                     }),
-                                   cx))
+         .child(Button::new("player-back").ghost()
+                                         .compact()
+                                         .small()
+                                         .icon(IconName::ArrowLeft)
+                                         .label("Team")
+                                         .text_size(px(13.0))
+                                         .gap(px(4.0))
+                                         .on_click(cx.listener(|this, _event, _window, cx| {
+                                               this.set_screen(AppScreen::Team, cx);
+                                           })))
          .child(render_detail_hero(colors,
                                    "Player Placeholder",
                                    "Midfielder · #10 · Sample FC"))

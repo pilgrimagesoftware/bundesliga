@@ -3,12 +3,13 @@
 
 use gpui::prelude::*;
 use gpui::{Context, Hsla, div, px};
+use gpui_component::IconName;
 use gpui_component::Sizable;
 use gpui_component::avatar::Avatar;
+use gpui_component::button::{Button, ButtonVariants as _};
 
 use crate::data::theme::ColorTokens;
 use crate::ui::app_state::AppScreen;
-use crate::ui::views::components::back_button::render_back_button;
 use crate::ui::views::components::form_dots::{FormResult, render_form_dots};
 use crate::ui::views::components::stat_grid::{StatCell, render_stat_grid};
 use crate::ui::views::root_view::RootView;
@@ -17,12 +18,16 @@ pub fn render_team_screen(colors: &ColorTokens, cx: &mut Context<RootView>) -> i
     div().flex()
          .flex_col()
          .gap(px(20.0))
-         .child(render_back_button("team-back",
-                                   "Standings",
-                                   cx.listener(|this, _event, _window, cx| {
-                                         this.set_screen(AppScreen::Standings, cx);
-                                     }),
-                                   cx))
+         .child(Button::new("team-back").ghost()
+                                       .compact()
+                                       .small()
+                                       .icon(IconName::ArrowLeft)
+                                       .label("Standings")
+                                       .text_size(px(13.0))
+                                       .gap(px(4.0))
+                                       .on_click(cx.listener(|this, _event, _window, cx| {
+                                             this.set_screen(AppScreen::Standings, cx);
+                                         })))
          .child(render_detail_hero(colors, "Sample FC", "Bundesliga · 3rd place"))
          .child(render_stat_grid(&[StatCell::new("12", "Played"),
                                    StatCell::new("7", "Wins"),
