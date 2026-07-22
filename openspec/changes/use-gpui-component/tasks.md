@@ -47,7 +47,7 @@
 
 ## 6. Record what stays custom
 
-- [ ] 6.1 Add a short doc comment to `form_dots.rs`, `legend.rs`, `stat_grid.rs`, `hero.rs`, and
+- [x] 6.1 Add a short doc comment to `form_dots.rs`, `legend.rs`, `stat_grid.rs`, `hero.rs`, and
       `widgets.rs` noting that they were evaluated against `gpui-component` during this change
       and kept because no equivalent widget exists, so a future audit doesn't re-litigate them
 
