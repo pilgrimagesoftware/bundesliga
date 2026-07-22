@@ -60,11 +60,18 @@ The system SHALL provide reusable shell components - hero banner, card, team bad
 - **THEN** both usages render through the same shared component implementation
 
 ### Requirement: Footer disclaimer text
-The system SHALL render a persistent footer disclaimer ("Prototype data is illustrative, not live sports data.") beneath the content area on every screen, matching the mockup.
+The system SHALL render a persistent status bar beneath the content area on every screen,
+with the disclaimer text ("Prototype data is illustrative, not live sports data.") on the left
+and a right-aligned row of utility buttons — Plugins, Activity, and Alerts — matching the
+mockup's disclaimer placement plus the `dtrpg-app.rs`-style status bar button row.
 
 #### Scenario: Disclaimer present on every screen
-- **WHEN** any of the five screens is active
-- **THEN** the disclaimer text is visible beneath the content area
+- **WHEN** any screen is active
+- **THEN** the disclaimer text is visible in the status bar's left region
+
+#### Scenario: Utility buttons present on every screen
+- **WHEN** any screen is active
+- **THEN** the Plugins, Activity, and Alerts buttons are visible in the status bar's right region
 
 ### Requirement: No legacy modal tokens ported
 The system SHALL NOT include the mockup's unused `modalBackdrop`/`modalCard`/`modalClose` tokens or any modal-based presentation for Player/Team detail views, since the mockup itself uses full-view navigation, not modals, for those screens.

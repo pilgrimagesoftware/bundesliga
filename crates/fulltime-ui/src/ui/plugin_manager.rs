@@ -9,7 +9,7 @@
 //! runtime out of the UI crate's dependency graph, the same way it has no
 //! direct dependency on league-data types.
 
-use gpui::Global;
+use gpui::{App, Global};
 
 /// A plugin as the Plugins screen displays it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -79,7 +79,9 @@ pub trait PluginManager: 'static {
     /// Enables or disables `id`, taking effect immediately. Implementations
     /// log and otherwise silently ignore a failure (e.g. an unknown `id`);
     /// the next [`Self::list`] call reflects whatever actually happened.
-    fn set_enabled(&mut self, id: &str, enabled: bool);
+    /// `cx` lets implementations record the outcome into the activity log
+    /// (see `crate::ui::activity`).
+    fn set_enabled(&mut self, id: &str, enabled: bool, cx: &mut App);
 
     /// Every currently loaded and enabled plugin, as a league the selector
     /// can offer. Empty if no plugin is loaded.

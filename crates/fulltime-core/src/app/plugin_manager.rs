@@ -3,15 +3,31 @@
 //! and toggle real plugins without `fulltime-ui` depending on `wasmtime` or
 //! `fulltime-plugin-api` — see that trait's own doc comment for why.
 
+use std::collections::HashSet;
 use std::path::PathBuf;
 
+use fulltime_ui::ui::activity::{ActivityControllerHandle, Status};
 use fulltime_ui::ui::plugin_manager::{
     CompetitionSummary, LeagueSummary, PluginManager, PluginManagerHandle, PluginSummary,
     StandingsRowSnapshot, StandingsSnapshot,
 };
+use gpui::App;
 
 use crate::plugin_host::PluginHost;
 use crate::plugin_host::registry::PluginRegistry;
+
+/// Records `label`/`status` into the activity log, if the controller is
+/// installed (see `fulltime_ui::ui::activity::install`, called before
+/// [`build`] in `app::run`). A no-op otherwise, so this never panics if the
+/// activity controller isn't wired up (e.g. in a future headless build).
+fn record_activity(cx: &mut App, label: impl Into<String>, status: Status) {
+    let Some(entity) = cx.try_global::<ActivityControllerHandle>()
+                         .map(|handle| handle.0.clone())
+    else {
+        return;
+    };
+    entity.update(cx, |controller, cx| controller.record(label, status, cx));
+}
 
 struct FulltimePluginManager {
     host:     PluginHost,
@@ -28,7 +44,7 @@ impl PluginManager for FulltimePluginManager {
             .collect()
     }
 
-    fn set_enabled(&mut self, id: &str, enabled: bool) {
+    fn set_enabled(&mut self, id: &str, enabled: bool, cx: &mut App) {
         let result = if enabled {
             self.registry
                 .enable(&mut self.host, id)
@@ -40,8 +56,15 @@ impl PluginManager for FulltimePluginManager {
                 .map_err(|error| error.to_string())
         };
 
-        if let Err(error) = result {
-            tracing::warn!(plugin_id = id, %error, "failed to toggle plugin enabled state");
+        let action = if enabled { "enable" } else { "disable" };
+        match result {
+            Ok(()) => record_activity(cx, format!("Plugin {id} {action}d"), Status::Complete),
+            Err(error) => {
+                tracing::warn!(plugin_id = id, %error, "failed to toggle plugin enabled state");
+                record_activity(cx,
+                                format!("Plugin {id} failed to {action}"),
+                                Status::Failed(error));
+            }
         }
     }
 
@@ -147,11 +170,17 @@ fn app_data_dir() -> PathBuf {
 ///
 /// A plugin that fails to load at startup is logged and skipped rather than
 /// failing the whole app, matching the registry's own discovery behavior.
+/// Every *discovered* plugin's load outcome (success or failure) is also
+/// recorded into the activity log — see `fulltime_ui::ui::activity::install`,
+/// which callers must have already run on `cx` before calling this, so the
+/// entries have somewhere to land. A plugin that fails discovery itself
+/// (e.g. an invalid manifest) never reaches this function's loop and so has
+/// no activity entry, only the registry's own `tracing::warn!`.
 ///
 /// # Errors
 /// Returns an error only if the [`PluginHost`] or its state file can't be
 /// initialized at all — never for an individual plugin failing to load.
-pub fn build() -> anyhow::Result<PluginManagerHandle> {
+pub fn build(cx: &mut App) -> anyhow::Result<PluginManagerHandle> {
     let data_dir = app_data_dir();
 
     let mut registry = PluginRegistry::new(data_dir.join("plugin_state.json"))?;
@@ -159,8 +188,20 @@ pub fn build() -> anyhow::Result<PluginManagerHandle> {
     registry.discover_user_installed(&data_dir.join("plugins"));
 
     let mut host = PluginHost::new()?;
-    for (plugin_id, error) in registry.load_enabled(&mut host) {
+    let failures = registry.load_enabled(&mut host);
+    let failed_ids: HashSet<&str> = failures.iter().map(|(id, _)| id.as_str()).collect();
+
+    for (plugin_id, error) in &failures {
         tracing::warn!(%plugin_id, %error, "failed to load plugin at startup");
+        record_activity(cx,
+                        format!("Plugin {plugin_id} failed to load"),
+                        Status::Failed(error.to_string()));
+    }
+    for (plugin_id, _) in
+        registry.discovered()
+                .filter(|(id, _)| registry.is_enabled(id) && !failed_ids.contains(id))
+    {
+        record_activity(cx, format!("Plugin {plugin_id} loaded"), Status::Complete);
     }
 
     Ok(PluginManagerHandle(Box::new(FulltimePluginManager { host, registry })))

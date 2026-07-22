@@ -90,9 +90,9 @@ fn render_plugin_row(colors: &ColorTokens, plugin: PluginSummary, cx: &mut Conte
                    .child(Switch::new(switch_id).checked(plugin.enabled)
                                                 .on_click(move |checked, _window, cx| {
                                                     if cx.has_global::<PluginManagerHandle>() {
-                                                        cx.global_mut::<PluginManagerHandle>()
-                                                          .0
-                                                          .set_enabled(&id, *checked);
+                                                        cx.update_global::<PluginManagerHandle, _>(|handle, cx| {
+                                                              handle.0.set_enabled(&id, *checked, cx);
+                                                          });
                                                     }
                                                     cx.refresh_windows();
                                                 }))

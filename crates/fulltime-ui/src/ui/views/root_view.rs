@@ -17,6 +17,7 @@ use gpui_component::searchable_list::SearchableVec;
 use rust_i18n::t;
 
 use crate::data::theme::{FullTimeTheme, ThemeKey};
+use crate::ui::activity::ActivityControllerHandle;
 use crate::ui::app_state::{AppScreen, MatchTab};
 use crate::ui::plugin_manager::{PluginManagerHandle, StandingsSnapshot};
 use crate::ui::views::components::league_selector::{
@@ -58,6 +59,11 @@ pub struct RootView {
     league_selector_fallback:           Option<SharedString>,
     _league_combobox_subscription:      Subscription,
     _competition_combobox_subscription: Subscription,
+    /// Re-renders the status bar's activity/alerts buttons when the
+    /// activity log changes. `None` if the activity controller isn't
+    /// installed (shouldn't happen outside tests — `app::run` installs it
+    /// unconditionally before opening the window).
+    _activity_subscription:             Option<Subscription>,
 }
 
 impl RootView {
@@ -115,6 +121,11 @@ impl RootView {
                                 }
                             });
 
+        let activity_subscription = cx.has_global::<ActivityControllerHandle>().then(|| {
+                                          let entity = cx.global::<ActivityControllerHandle>().0.clone();
+                                          cx.observe(&entity, |_view, _entity, cx| cx.notify())
+                                      });
+
         let mut view = Self { active_screen: AppScreen::Standings,
                               active_match_tab: MatchTab::Summary,
                               history_open_rows: HashSet::new(),
@@ -127,7 +138,8 @@ impl RootView {
                               league_selector_fallback,
                               _league_combobox_subscription: league_combobox_subscription,
                               _competition_combobox_subscription:
-                                  competition_combobox_subscription };
+                                  competition_combobox_subscription,
+                              _activity_subscription: activity_subscription };
 
         // Auto-select the first available league/competition, if any, so
         // the Standings screen shows real data immediately rather than
