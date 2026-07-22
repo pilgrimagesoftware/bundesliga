@@ -11,11 +11,11 @@
 **Non-Goals:**
 - No change to which fonts are used (still Sora/Manrope, still Style A only, per `design-tokens`'s "No Style B tokens" requirement).
 - No dynamic/user-configurable font selection.
-- No font subsetting or custom build pipeline — vendor the static weight files needed and no more.
+- No font subsetting or custom build pipeline — vendor the font files needed and no more.
 
 ## Decisions
 
-- **Vendor static `.ttf` files, not variable fonts.** GPUI's `add_fonts` takes an `Vec<Cow<'static, [u8]>>` of font binary data and does not do variable-font axis selection; using per-weight static Sora/Manrope files (matching the mockup's declared weights: Sora 600/700/800, Manrope 400/500/600/700) avoids relying on undocumented variable-font behavior.
+- **Vendor the variable font files as-is, not statically-instanced per-weight files.** Google Fonts' upstream repo (`google/fonts`) only distributes Sora and Manrope as single variable-font files (`Sora[wght].ttf`, `Manrope[wght].ttf`) — no static per-weight `.ttf` files exist to vendor. Confirmed against the pinned GPUI revision (`1d217ee`, `crates/gpui_macos/src/text_system.rs`): `add_fonts` hands embedded bytes to CoreText via `CGFont::from_data_provider`, and GPUI's `Font` type already carries a `weight: FontWeight` field used at font-matching time — CoreText resolves the `wght` variation axis to the requested weight natively, so one variable-font file per family covers every weight the mockup uses (Sora 600/700/800, Manrope 400/500/600/700) without static instancing or extra tooling.
 - **Embed via `include_bytes!` at compile time**, not a runtime `AssetSource` lookup. There's no existing `AssetSource` implementation in `fulltime-ui` (`gpui-component-assets` is a separate crate for component icons, not app fonts), and adding one is unnecessary indirection for a fixed, small set of font files. `include_bytes!` keeps the binary self-contained with no runtime file-not-found failure mode.
 - **Register fonts in the same startup path as theme initialization** (`crates/fulltime-ui/src/util/init.rs`, called before the first window opens), so `FontSelections`'s family names are guaranteed resolvable the first time any view renders text.
 - **License compliance**: vendor each font's `OFL.txt` alongside the `.ttf` files under `assets/fonts/<family>/`, matching Google Fonts' distribution requirement to keep the license with the font files.
