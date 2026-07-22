@@ -110,5 +110,6 @@ fn row_card(cx: &App) -> GroupBox {
                                  .rounded(theme.radius.base)
                                  .gap(px(12.0));
 
-    GroupBox::new().outline().content_style(content_style.style().clone())
+    GroupBox::new().outline()
+                   .content_style(content_style.style().clone())
 }

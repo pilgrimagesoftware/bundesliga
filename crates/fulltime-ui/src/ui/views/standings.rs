@@ -213,12 +213,15 @@ fn render_standings_grid(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors,
                              .bg(bg)
                              .text_color(colors.text_primary)
                              .text_size(px(13.0))
-                             .child(Avatar::new().name(row.club.chars().take(2).collect::<String>())
-                                                .with_size(px(20.0))
-                                                .bg(Hsla { a: 0.18, ..accent })
-                                                .text_color(colors.text_primary)
-                                                .text_size(px(20.0 * 0.38))
-                                                .border_0())
+                             .child(Avatar::new().name(row.club
+                                                          .chars()
+                                                          .take(2)
+                                                          .collect::<String>())
+                                                 .with_size(px(20.0))
+                                                 .bg(Hsla { a: 0.18, ..accent })
+                                                 .text_color(colors.text_primary)
+                                                 .text_size(px(20.0 * 0.38))
+                                                 .border_0())
                              .child(row.club)
                              .into_any_element());
         body_cells.push(grid_cell(bg, colors.text_primary, row.p.to_string()));
@@ -280,7 +283,8 @@ fn card_group_box(cx: &App) -> GroupBox {
                                  .rounded(theme.radius.base)
                                  .gap(px(12.0));
 
-    GroupBox::new().outline().content_style(content_style.style().clone())
+    GroupBox::new().outline()
+                   .content_style(content_style.style().clone())
 }
 
 fn render_matchday_fixture(i: u8) -> impl IntoElement {
@@ -318,12 +322,12 @@ fn render_match_status(status: MatchStatus, label: impl Into<SharedString>) -> A
     };
 
     let tag = Tag::new().with_variant(variant)
-                       .rounded_full()
-                       .px(px(8.0))
-                       .py(px(2.0))
-                       .text_size(px(11.0))
-                       .font_weight(gpui::FontWeight::SEMIBOLD)
-                       .child(label.into());
+                        .rounded_full()
+                        .px(px(8.0))
+                        .py(px(2.0))
+                        .text_size(px(11.0))
+                        .font_weight(gpui::FontWeight::SEMIBOLD)
+                        .child(label.into());
 
     if status == MatchStatus::Live {
         tag.with_animation("live-status-pulse",

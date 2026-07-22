@@ -19,15 +19,15 @@ pub fn render_team_screen(colors: &ColorTokens, cx: &mut Context<RootView>) -> i
          .flex_col()
          .gap(px(20.0))
          .child(Button::new("team-back").ghost()
-                                       .compact()
-                                       .small()
-                                       .icon(IconName::ArrowLeft)
-                                       .label("Standings")
-                                       .text_size(px(13.0))
-                                       .gap(px(4.0))
-                                       .on_click(cx.listener(|this, _event, _window, cx| {
-                                             this.set_screen(AppScreen::Standings, cx);
-                                         })))
+                                        .compact()
+                                        .small()
+                                        .icon(IconName::ArrowLeft)
+                                        .label("Standings")
+                                        .text_size(px(13.0))
+                                        .gap(px(4.0))
+                                        .on_click(cx.listener(|this, _event, _window, cx| {
+                                                        this.set_screen(AppScreen::Standings, cx);
+                                                    })))
          .child(render_detail_hero(colors, "Sample FC", "Bundesliga · 3rd place"))
          .child(render_stat_grid(&[StatCell::new("12", "Played"),
                                    StatCell::new("7", "Wins"),
@@ -51,11 +51,12 @@ fn render_detail_hero(colors: &ColorTokens, name: &str, meta: &str) -> impl Into
          .rounded(px(16.0))
          .bg(colors.surface_alt)
          .child(Avatar::new().name(name.chars().take(2).collect::<String>())
-                            .with_size(px(56.0))
-                            .bg(Hsla { a: 0.18, ..colors.accent })
-                            .text_color(colors.text_primary)
-                            .text_size(px(56.0 * 0.38))
-                            .border_0())
+                             .with_size(px(56.0))
+                             .bg(Hsla { a: 0.18,
+                                        ..colors.accent })
+                             .text_color(colors.text_primary)
+                             .text_size(px(56.0 * 0.38))
+                             .border_0())
          .child(div().flex()
                      .flex_col()
                      .gap(px(4.0))

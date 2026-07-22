@@ -18,18 +18,16 @@ pub fn render_player_screen(colors: &ColorTokens, cx: &mut Context<RootView>) ->
          .flex_col()
          .gap(px(20.0))
          .child(Button::new("player-back").ghost()
-                                         .compact()
-                                         .small()
-                                         .icon(IconName::ArrowLeft)
-                                         .label("Team")
-                                         .text_size(px(13.0))
-                                         .gap(px(4.0))
-                                         .on_click(cx.listener(|this, _event, _window, cx| {
-                                               this.set_screen(AppScreen::Team, cx);
-                                           })))
-         .child(render_detail_hero(colors,
-                                   "Player Placeholder",
-                                   "Midfielder · #10 · Sample FC"))
+                                          .compact()
+                                          .small()
+                                          .icon(IconName::ArrowLeft)
+                                          .label("Team")
+                                          .text_size(px(13.0))
+                                          .gap(px(4.0))
+                                          .on_click(cx.listener(|this, _event, _window, cx| {
+                                                          this.set_screen(AppScreen::Team, cx);
+                                                      })))
+         .child(render_detail_hero(colors, "Player Placeholder", "Midfielder · #10 · Sample FC"))
          .child(render_stat_grid(&[StatCell::new("18", "Appearances"),
                                    StatCell::new("6", "Goals"),
                                    StatCell::new("4", "Assists"),
@@ -47,11 +45,12 @@ fn render_detail_hero(colors: &ColorTokens, name: &str, meta: &str) -> impl Into
          .rounded(px(16.0))
          .bg(colors.surface_alt)
          .child(Avatar::new().name(name.chars().take(2).collect::<String>())
-                            .with_size(px(56.0))
-                            .bg(Hsla { a: 0.18, ..colors.accent })
-                            .text_color(colors.text_primary)
-                            .text_size(px(56.0 * 0.38))
-                            .border_0())
+                             .with_size(px(56.0))
+                             .bg(Hsla { a: 0.18,
+                                        ..colors.accent })
+                             .text_color(colors.text_primary)
+                             .text_size(px(56.0 * 0.38))
+                             .border_0())
          .child(div().flex()
                      .flex_col()
                      .gap(px(4.0))

@@ -30,12 +30,12 @@ fn render_match_status(status: MatchStatus, label: impl Into<SharedString>) -> A
     };
 
     let tag = Tag::new().with_variant(variant)
-                       .rounded_full()
-                       .px(px(8.0))
-                       .py(px(2.0))
-                       .text_size(px(11.0))
-                       .font_weight(gpui::FontWeight::SEMIBOLD)
-                       .child(label.into());
+                        .rounded_full()
+                        .px(px(8.0))
+                        .py(px(2.0))
+                        .text_size(px(11.0))
+                        .font_weight(gpui::FontWeight::SEMIBOLD)
+                        .child(label.into());
 
     if status == MatchStatus::Live {
         tag.with_animation("live-status-pulse",
@@ -59,15 +59,15 @@ pub fn render_match_screen(colors: &ColorTokens, active_tab: MatchTab,
          .flex_col()
          .gap(px(20.0))
          .child(Button::new("match-back").ghost()
-                                        .compact()
-                                        .small()
-                                        .icon(IconName::ArrowLeft)
-                                        .label("Standings")
-                                        .text_size(px(13.0))
-                                        .gap(px(4.0))
-                                        .on_click(cx.listener(|this, _event, _window, cx| {
-                                              this.set_screen(AppScreen::Standings, cx);
-                                          })))
+                                         .compact()
+                                         .small()
+                                         .icon(IconName::ArrowLeft)
+                                         .label("Standings")
+                                         .text_size(px(13.0))
+                                         .gap(px(4.0))
+                                         .on_click(cx.listener(|this, _event, _window, cx| {
+                                                         this.set_screen(AppScreen::Standings, cx);
+                                                     })))
          .child(render_score_header(colors))
          .child(render_match_tabs(active_tab, cx))
          .child(render_tab_body(colors, active_tab))
@@ -88,11 +88,11 @@ fn render_score_header(colors: &ColorTokens) -> impl IntoElement {
                      .items_center()
                      .gap(px(6.0))
                      .child(Avatar::new().name("HM")
-                                        .with_size(px(48.0))
-                                        .bg(Hsla { a: 0.18, ..accent })
-                                        .text_color(colors.text_primary)
-                                        .text_size(px(48.0 * 0.38))
-                                        .border_0())
+                                         .with_size(px(48.0))
+                                         .bg(Hsla { a: 0.18, ..accent })
+                                         .text_color(colors.text_primary)
+                                         .text_size(px(48.0 * 0.38))
+                                         .border_0())
                      .child("Home Placeholder"))
          .child(div().flex()
                      .flex_col()
@@ -110,11 +110,11 @@ fn render_score_header(colors: &ColorTokens) -> impl IntoElement {
                      .items_center()
                      .gap(px(6.0))
                      .child(Avatar::new().name("AW")
-                                        .with_size(px(48.0))
-                                        .bg(Hsla { a: 0.18, ..accent })
-                                        .text_color(colors.text_primary)
-                                        .text_size(px(48.0 * 0.38))
-                                        .border_0())
+                                         .with_size(px(48.0))
+                                         .bg(Hsla { a: 0.18, ..accent })
+                                         .text_color(colors.text_primary)
+                                         .text_size(px(48.0 * 0.38))
+                                         .border_0())
                      .child("Away Placeholder"))
 }
 

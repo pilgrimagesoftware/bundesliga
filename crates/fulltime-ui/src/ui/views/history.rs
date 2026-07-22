@@ -26,16 +26,17 @@ pub fn render_history_screen(colors: &ColorTokens, open_rows: &HashSet<usize>,
         rows.push(render_matchday_row(colors, ix, is_open, cx).into_any_element());
     }
 
-    let back_button = Button::new("history-back").ghost()
-                                                  .compact()
-                                                  .small()
-                                                  .icon(IconName::ArrowLeft)
-                                                  .label("Standings")
-                                                  .text_size(px(13.0))
-                                                  .gap(px(4.0))
-                                                  .on_click(cx.listener(|this, _event, _window, cx| {
-                                                        this.set_screen(AppScreen::Standings, cx);
-                                                    }));
+    let back_button =
+        Button::new("history-back").ghost()
+                                   .compact()
+                                   .small()
+                                   .icon(IconName::ArrowLeft)
+                                   .label("Standings")
+                                   .text_size(px(13.0))
+                                   .gap(px(4.0))
+                                   .on_click(cx.listener(|this, _event, _window, cx| {
+                                                   this.set_screen(AppScreen::Standings, cx);
+                                               }));
     let hero = render_hero("Bundesliga",
                            format!("{MATCHDAY_COUNT} Matchdays"),
                            div(),
