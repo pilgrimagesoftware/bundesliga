@@ -60,14 +60,28 @@
 
 ## 8. Migrate gpui to gpui-ce via a workspace `[patch]` override
 
-- [ ] 8.1 Add `[patch."https://github.com/zed-industries/zed"]` to the top-level `Cargo.toml`,
+**BLOCKED — see findings below.** Not attempted further in this change; tasks 1-7 (the widget
+migration) ship independently of this section.
+
+- [x] 8.1 Add `[patch."https://github.com/zed-industries/zed"]` to the top-level `Cargo.toml`,
       redirecting `gpui` and `gpui_platform` to `git = "https://github.com/gpui-ce/gpui-ce"`.
       Leave `gpui-component`'s own `Cargo.toml` unchanged — the patch applies transitively to
       its `gpui`/`gpui_platform` dependency without it needing any change
-- [ ] 8.2 `cargo build` and `cargo clippy --all-targets --all-features -- -D warnings` against
-      the patched dependency graph. If either fails, treat it as `gpui-ce`/Zed `gpui` API drift
-      to triage (pin the patch to a specific `gpui-ce` rev closer to the currently-pinned Zed
-      `gpui` rev `1d217ee3`, or report the gap) — not a reason to abandon the patch approach
+- [x] 8.2 `cargo build` and `cargo clippy --all-targets --all-features -- -D warnings` against
+      the patched dependency graph. **Failed** — floating on `gpui-ce`'s default branch
+      (`6c799b8e`, 2026-07-13) breaks `gpui-component`'s build: `gpui-component`'s pinned
+      revision (`be4c5d30`, matching Zed `gpui` rev `1d217ee3`) calls `flex_grow(f32)`,
+      `flex_grow_1()`, and `flex_shrink_1()` from `gpui`'s `Styled` trait. `gpui-ce`'s
+      "re-re-fork (#28)" commit (`01335f7`, 2026-06-02) rewrote `Styled`'s flex API to a
+      different, argument-less shape (`flex_grow()`, `flex_grow_0()`, no `flex_grow_1()` at
+      all) — a deliberate redesign, not incidental drift, and every `gpui-ce` commit since
+      carries it. This isn't fixable by picking a different post-rewrite rev near the
+      `1d217ee3` date (2026-06-12): `gpui-ce` forked from Zed once around December 2025 and has
+      been diverging independently through its own restructuring since, rather than
+      continuously tracking Zed upstream. Pinning to a pre-rewrite (pre-2026-06-02) `gpui-ce`
+      commit would mean a ~6-month-old Dec-2025-era snapshot with unknown further gaps beyond
+      this one. Reported as a blocking gap per the task's own triage instruction, rather than
+      pinning to an unvetted ancient rev
 - [ ] 8.3 Audit fulltime-ui's direct `gpui`/`gpui_platform` API usage (not just usage that goes
       through `gpui-component`) for any behavior that compiled but might differ at runtime
 - [ ] 8.4 `cargo test --workspace` passes against the patched dependency graph
