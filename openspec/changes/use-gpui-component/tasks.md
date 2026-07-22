@@ -53,8 +53,8 @@
 
 ## 7. Verification
 
-- [ ] 7.1 `cargo build` and `cargo clippy --all-targets --all-features -- -D warnings` pass
-- [ ] 7.2 `cargo test --workspace` passes
+- [x] 7.1 `cargo build` and `cargo clippy --all-targets --all-features -- -D warnings` pass
+- [x] 7.2 `cargo test --workspace` passes
 - [ ] 7.3 Full manual pass through every migrated screen (Standings, Match, Team, Player,
       History, Plugins) in both light and dark `FullTimeTheme` variants
 
