@@ -1,10 +1,10 @@
 ## 1. Theme bridge fix (prerequisite for the Tag migration)
 
-- [ ] 1.1 Grep every current `gpui-component` widget usage (`Combobox`, `TabBar`,
+- [x] 1.1 Grep every current `gpui-component` widget usage (`Combobox`, `TabBar`,
       `gpui_component::badge::Badge`, `Popover`, `Button`, `StatusBar`) for reliance on
       `theme.colors.success`/`.warning`/`.info` to confirm none currently depend on
       `gpui-component`'s built-in defaults for those fields
-- [ ] 1.2 Extend `data::theme::apply_theme_colors` to map `success`, `warning`, and `info`
+- [x] 1.2 Extend `data::theme::apply_theme_colors` to map `success`, `warning`, and `info`
       (plus their `_foreground`/`_active`/`_hover` counterparts) from `ColorTokens`, following
       the existing `primary`/`secondary`/`danger` pattern
 - [ ] 1.3 Manually verify (run the app, switch themes) that a `Tag` rendered with each semantic
@@ -12,10 +12,10 @@
 
 ## 2. Migrate badge.rs to Avatar
 
-- [ ] 2.1 Replace `render_badge` call sites in `match_view.rs`, `team.rs`, `standings.rs`, and
+- [x] 2.1 Replace `render_badge` call sites in `match_view.rs`, `team.rs`, `standings.rs`, and
       `player.rs` with `gpui_component::avatar::Avatar`
 - [ ] 2.2 Visually compare each of the four screens against pre-migration screenshots
-- [ ] 2.3 Delete `views/components/badge.rs` and its module declaration
+- [x] 2.3 Delete `views/components/badge.rs` and its module declaration
 
 ## 3. Migrate card.rs to GroupBox
 

@@ -11,10 +11,11 @@
 
 use gpui::prelude::*;
 use gpui::{App, Hsla, div, px};
+use gpui_component::Sizable;
+use gpui_component::avatar::Avatar;
 
 use crate::data::theme::{ColorTokens, ZoneColors, zone_colors};
 use crate::ui::plugin_manager::{StandingsRowSnapshot, StandingsSnapshot};
-use crate::ui::views::components::badge::render_badge;
 use crate::ui::views::components::card::render_card;
 use crate::ui::views::components::form_dots::{FormResult, render_form_dots};
 use crate::ui::views::components::hero::render_hero;
@@ -170,7 +171,7 @@ fn render_standings_table_panel(colors: &ColorTokens, accent: Hsla, zones: &Zone
          .flex()
          .flex_col()
          .gap(px(12.0))
-         .child(render_standings_grid(colors, accent, zones, rows, cx))
+         .child(render_standings_grid(colors, accent, zones, rows))
          .child(div().flex()
                      .gap(px(16.0))
                      .child(render_legend_item(zones.ucl, "Champions League", cx))
@@ -179,7 +180,7 @@ fn render_standings_table_panel(colors: &ColorTokens, accent: Hsla, zones: &Zone
 }
 
 fn render_standings_grid(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors,
-                         rows: Vec<DisplayRow>, cx: &App)
+                         rows: Vec<DisplayRow>)
                          -> impl IntoElement {
     let header_cells = STANDINGS_HEADERS.iter().map(|label| {
                                                    div().px(px(8.0))
@@ -211,10 +212,12 @@ fn render_standings_grid(colors: &ColorTokens, accent: Hsla, zones: &ZoneColors,
                              .bg(bg)
                              .text_color(colors.text_primary)
                              .text_size(px(13.0))
-                             .child(render_badge(row.club.chars().take(2).collect::<String>(),
-                                                 accent,
-                                                 20.0,
-                                                 cx))
+                             .child(Avatar::new().name(row.club.chars().take(2).collect::<String>())
+                                                .with_size(px(20.0))
+                                                .bg(Hsla { a: 0.18, ..accent })
+                                                .text_color(colors.text_primary)
+                                                .text_size(px(20.0 * 0.38))
+                                                .border_0())
                              .child(row.club)
                              .into_any_element());
         body_cells.push(grid_cell(bg, colors.text_primary, row.p.to_string()));

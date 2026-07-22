@@ -29,7 +29,6 @@ pub mod ui {
             pub mod activity_panel;
             pub mod alert_history_panel;
             pub mod back_button;
-            pub mod badge;
             pub mod card;
             pub mod form_dots;
             pub mod hero;

@@ -3,12 +3,13 @@
 //! match data exists yet.
 
 use gpui::prelude::*;
-use gpui::{Context, div, px};
+use gpui::{Context, Hsla, div, px};
+use gpui_component::Sizable;
+use gpui_component::avatar::Avatar;
 
 use crate::data::theme::ColorTokens;
 use crate::ui::app_state::{AppScreen, MatchTab};
 use crate::ui::views::components::back_button::render_back_button;
-use crate::ui::views::components::badge::render_badge;
 use crate::ui::views::components::status_pill::{MatchStatus, render_status_pill};
 use crate::ui::views::components::tab_bar::render_tab_bar;
 use crate::ui::views::root_view::RootView;
@@ -44,7 +45,12 @@ fn render_score_header(colors: &ColorTokens, cx: &Context<RootView>) -> impl Int
                      .flex_col()
                      .items_center()
                      .gap(px(6.0))
-                     .child(render_badge("HM", accent, 48.0, cx))
+                     .child(Avatar::new().name("HM")
+                                        .with_size(px(48.0))
+                                        .bg(Hsla { a: 0.18, ..accent })
+                                        .text_color(colors.text_primary)
+                                        .text_size(px(48.0 * 0.38))
+                                        .border_0())
                      .child("Home Placeholder"))
          .child(div().flex()
                      .flex_col()
@@ -61,7 +67,12 @@ fn render_score_header(colors: &ColorTokens, cx: &Context<RootView>) -> impl Int
                      .flex_col()
                      .items_center()
                      .gap(px(6.0))
-                     .child(render_badge("AW", accent, 48.0, cx))
+                     .child(Avatar::new().name("AW")
+                                        .with_size(px(48.0))
+                                        .bg(Hsla { a: 0.18, ..accent })
+                                        .text_color(colors.text_primary)
+                                        .text_size(px(48.0 * 0.38))
+                                        .border_0())
                      .child("Away Placeholder"))
 }
 
