@@ -7,23 +7,23 @@
 - [x] 1.2 Extend `data::theme::apply_theme_colors` to map `success`, `warning`, and `info`
       (plus their `_foreground`/`_active`/`_hover` counterparts) from `ColorTokens`, following
       the existing `primary`/`secondary`/`danger` pattern
-- [ ] 1.3 Manually verify (run the app, switch themes) that a `Tag` rendered with each semantic
+- [x] 1.3 Manually verify (run the app, switch themes) that a `Tag` rendered with each semantic
       variant reflects the active `FullTimeTheme` palette
 
 ## 2. Migrate badge.rs to Avatar
 
 - [x] 2.1 Replace `render_badge` call sites in `match_view.rs`, `team.rs`, `standings.rs`, and
       `player.rs` with `gpui_component::avatar::Avatar`
-- [ ] 2.2 Visually compare each of the four screens against pre-migration screenshots
+- [x] 2.2 Visually compare each of the four screens against pre-migration screenshots
 - [x] 2.3 Delete `views/components/badge.rs` and its module declaration
 
 ## 3. Migrate card.rs to GroupBox
 
 - [x] 3.1 Replace `render_card` call sites in `standings.rs` with `gpui_component::group_box::GroupBox`,
       overriding padding/gap via `StyleRefinement` if the defaults don't match `px(16.0)`/`px(12.0)`
-- [ ] 3.2 Visually compare `standings.rs` against its pre-migration screenshot
+- [x] 3.2 Visually compare `standings.rs` against its pre-migration screenshot
 - [x] 3.3 Replace `render_card` call sites in `plugins.rs` with `GroupBox`
-- [ ] 3.4 Visually compare `plugins.rs` against its pre-migration screenshot
+- [x] 3.4 Visually compare `plugins.rs` against its pre-migration screenshot
 - [x] 3.5 Delete `views/components/card.rs` and its module declaration
 
 ## 4. Migrate back_button.rs to Button
@@ -31,7 +31,7 @@
 - [x] 4.1 Replace `render_back_button` call sites in `team.rs`, `match_view.rs`, `history.rs`,
       and `player.rs` with a ghost/text-variant `gpui_component::button::Button` plus a leading
       arrow `Icon`
-- [ ] 4.2 Visually compare each of the four screens against pre-migration screenshots
+- [x] 4.2 Visually compare each of the four screens against pre-migration screenshots
 - [x] 4.3 Delete `views/components/back_button.rs` and its module declaration
 
 ## 5. Migrate status_pill.rs to Tag
@@ -41,7 +41,7 @@
       the appropriate `TagVariant`
 - [x] 5.2 Wrap the `Live`-state `Tag` in the existing `AnimationExt` opacity-pulse loop so the
       animation is preserved
-- [ ] 5.3 Visually compare `match_view.rs` and `standings.rs` against pre-migration screenshots,
+- [x] 5.3 Visually compare `match_view.rs` and `standings.rs` against pre-migration screenshots,
       including the `Live` pulse animation
 - [x] 5.4 Delete `views/components/status_pill.rs` and its module declaration
 
@@ -55,7 +55,7 @@
 
 - [x] 7.1 `cargo build` and `cargo clippy --all-targets --all-features -- -D warnings` pass
 - [x] 7.2 `cargo test --workspace` passes
-- [ ] 7.3 Full manual pass through every migrated screen (Standings, Match, Team, Player,
+- [x] 7.3 Full manual pass through every migrated screen (Standings, Match, Team, Player,
       History, Plugins) in both light and dark `FullTimeTheme` variants
 
 ## 8. Migrate gpui to gpui-ce via a workspace `[patch]` override
